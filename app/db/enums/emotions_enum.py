@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class EmotionsEnum(Enum):
+class EmotionsEnum(str, Enum):
     AFRAID = "испуг"
     ANGRY = "гнев"
     ANXIOUS = "тревога"
