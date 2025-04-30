@@ -10,11 +10,8 @@ from alembic import context
 
 from app.db.models.base import Base
 
-from app.db.models import (
-    client, psychologist, admin, note, 
-    confirmation_request, psychologist_request,
-    client_request
-)  # this import is necessary to register the models with SQLAlchemy
+# these imports is necessary to register the models with SQLAlchemy
+from app.db.models import Admin, Client, ClientRequest, ConfirmationRequest, Note, PsychologistRequest, Psychologist
 
 load_dotenv()
 
