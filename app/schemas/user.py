@@ -23,3 +23,8 @@ class UserResponse(BaseModel):
     last_name: str
     birthAt: str  # ISO format date yyyy-mm-dd
     jwt_token: str
+
+
+class UserLogin(BaseModel):
+    login: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8, max_length=100)

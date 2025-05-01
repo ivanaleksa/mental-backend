@@ -5,8 +5,8 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.schemas.user import UserCreate, UserResponse
-from app.core.security import hash_password, create_jwt_token
+from app.schemas.user import UserCreate, UserResponse, UserLogin
+from app.core.security import hash_password, create_jwt_token, verify_password
 from app.db.models.client import Client
 
 
@@ -65,5 +65,39 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
     db.add(user)
     await db.commit()
     await db.refresh(user)
+
+    return user_response
+
+
+async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserResponse:
+    """
+    Authenticate a user and return their data.
+
+    Args:
+        login_data (UserLogin): The login credentials of the user.
+        db (AsyncSession): The database session.
+
+    Returns:
+        UserResponse: An object containing the authenticated user's data.
+    """
+
+    stmt = select(Client).where(Client.login == login_data.login)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user or not verify_password(login_data.password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid login or password")
+
+    jwt_token = create_jwt_token({"user_id": user.client_id})
+
+    user_response = UserResponse(
+        user_id=user.client_id,
+        login=user.login,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        birthAt=user.birthAt.isoformat(),
+        jwt_token=jwt_token
+    )
 
     return user_response
