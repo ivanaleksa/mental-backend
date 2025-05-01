@@ -1,7 +1,6 @@
 from sqlalchemy import Table, Column, Integer, ForeignKey
 from app.db.models.base import Base
 
-
 # Secondary table for the many-to-many relationship between clients and psychologists
 client_psychologist = Table(
     "client_psychologist",

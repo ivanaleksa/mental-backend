@@ -6,7 +6,6 @@ from app.schemas.user import UserCreate, UserResponse
 from app.db.session import get_db
 from app.services.user_service import register_user_service
 
-
 router = APIRouter()
 
 

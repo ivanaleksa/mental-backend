@@ -21,7 +21,7 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
     Returns:
         UserResponse: An object containing the registered user's data.
     """
-    
+
     stmt_email = select(Client).where(Client.email == user_data.email)
     result_email = await db.execute(stmt_email)
     if result_email.scalar_one_or_none():
@@ -31,10 +31,10 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
     result_login = await db.execute(stmt_login)
     if result_login.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Login already taken")
-    
+
     hashed_password = hash_password(user_data.password)
 
-    # Convert the birth date string to a datetime object
+    # Convert the birthdate string to a datetime object
     try:
         birth_date = datetime.fromisoformat(user_data.birthAt)
     except ValueError:
