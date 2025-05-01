@@ -16,6 +16,9 @@ async def hello_world():
 
 @router.post("/register", response_model=UserResponse)
 async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+    """
+    Refister a new user and return their info with a JWT token.
+    """
     try:
         return await register_user_service(user_data, db)
     except ValueError as e:
