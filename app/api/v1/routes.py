@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.user import UserCreate, UserResponse, UserLogin
+from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword
 from app.db.session import get_db
-from app.services.user_service import register_user_service, login_user_service
+from app.services.user_service import register_user_service, login_user_service, update_password_service
 
 router = APIRouter()
 
@@ -29,5 +29,16 @@ async def login_user(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     """
     try:
         return await login_user_service(login_data, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/change-password", response_model=UserResponse)
+async def change_password(update_info: UserUpdatePassword, db: AsyncSession = Depends(get_db)):
+    """
+    Change the password of a user.
+    """
+    try:
+        return await update_password_service(update_info, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

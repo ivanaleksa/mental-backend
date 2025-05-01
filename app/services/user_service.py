@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.schemas.user import UserCreate, UserResponse, UserLogin
+from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword
 from app.core.security import hash_password, create_jwt_token, verify_password
 from app.db.models.client import Client
 
@@ -87,6 +87,44 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
 
     if not user or not verify_password(login_data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid login or password")
+
+    jwt_token = create_jwt_token({"user_id": user.client_id})
+
+    user_response = UserResponse(
+        user_id=user.client_id,
+        login=user.login,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        birthAt=user.birthAt.isoformat(),
+        jwt_token=jwt_token
+    )
+
+    return user_response
+
+
+async def update_password_service(update_info: UserUpdatePassword, db: AsyncSession) -> UserResponse:
+    """
+    Update the user's password.
+
+    Args:
+        update_info (UserUpdatePassword): The information needed to update the password.
+        db (AsyncSession): The database session.
+
+    Returns:
+        UserResponse: An object containing the updated user's data.
+    """
+
+    stmt = select(Client).where(Client.client_id == update_info.user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user or not verify_password(update_info.old_password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid old password")
+
+    user.password = hash_password(update_info.new_password)
+    await db.commit()
+    await db.refresh(user)
 
     jwt_token = create_jwt_token({"user_id": user.client_id})
 

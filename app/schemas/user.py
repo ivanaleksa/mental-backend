@@ -28,3 +28,9 @@ class UserResponse(BaseModel):
 class UserLogin(BaseModel):
     login: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=100)
+
+
+class UserUpdatePassword(BaseModel):
+    user_id: int
+    old_password: str = Field(..., min_length=8, max_length=100)
+    new_password: str = Field(..., min_length=8, max_length=100)
