@@ -4,8 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword
 from app.db.session import get_db
+from app.db.models.client import Client
 from app.services.user_service import register_user_service, login_user_service, update_password_service
 from app.services.auth_service import confirm_email_service
+from app.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -49,11 +51,11 @@ async def change_password(update_info: UserUpdatePassword, db: AsyncSession = De
 
 
 @router.post("/confirm-email/{code}")
-async def confirm_email(code: str, db: AsyncSession = Depends(get_db)):
+async def confirm_email(code: str, current_user: Client = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """
     Confirm the email of a user using a confirmation code.
     """
     try:
-        return await confirm_email_service(db, code)
+        return await confirm_email_service(db, code, current_user.client_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

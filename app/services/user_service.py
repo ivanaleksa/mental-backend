@@ -112,7 +112,7 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
                             detail="Invalid login or password",
                             headers={"WWW-Authenticate": "Bearer"})
 
-    jwt_token = create_jwt_token({"user_id": user.client_id})
+    jwt_token = create_jwt_token(data={"sub": user.login})
 
     user_response = UserResponse(
         user_id=user.client_id,
@@ -151,7 +151,7 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
     await db.commit()
     await db.refresh(user)
 
-    jwt_token = create_jwt_token({"user_id": user.client_id})
+    jwt_token = create_jwt_token(data={"sub": user.login})
 
     user_response = UserResponse(
         user_id=user.client_id,

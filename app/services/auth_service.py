@@ -11,7 +11,7 @@ from app.db.models.confirmation_request import ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
 
 
-async def confirm_email_service(db: AsyncSession, code: str) -> dict:
+async def confirm_email_service(db: AsyncSession, code: str, client_id: int) -> dict:
     stmt = select(ConfirmationRequest).where(ConfirmationRequest.code == code)
     result = await db.execute(stmt)
     confirmation_request = result.scalar_one_or_none()
@@ -21,6 +21,9 @@ async def confirm_email_service(db: AsyncSession, code: str) -> dict:
     
     if confirmation_request.confirmedAt:
         raise HTTPException(status_code=400, detail="Code already used")
+
+    if confirmation_request.client_id != client_id:
+        raise HTTPException(status_code=403, detail="Unauthorized: This code is not for your account")
     
     expiration_time = confirmation_request.createdAt + timedelta(minutes=settings.CODE_EXPIRE_MINUTES)
     if datetime.now(timezone.utc) > expiration_time:
