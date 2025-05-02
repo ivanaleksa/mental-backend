@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
+import secrets
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -8,6 +9,9 @@ from sqlalchemy.future import select
 from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword
 from app.core.security import hash_password, create_jwt_token, verify_password
 from app.db.models.client import Client
+from app.db.models.confirmation_request import ConfirmationRequest
+from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
+from app.core.email import send_confirmation_email
 
 
 async def register_user_service(user_data: UserCreate, db: AsyncSession) -> UserResponse:
@@ -47,8 +51,13 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         birthAt=birth_date,
-        sex=user_data.sex
+        sex=user_data.sex,
+        is_verified=False
     )
+
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
 
     jwt_token = create_jwt_token({"user_id": user.client_id})
 
@@ -59,12 +68,25 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
         first_name=user.first_name,
         last_name=user.last_name,
         birthAt=user_data.birthAt,
+        is_verified=False,
         jwt_token=jwt_token
     )
 
-    db.add(user)
+    # Send confirmation code
+    confirmation_code = secrets.token_hex(8)
+    confirmation_code_request = ConfirmationRequest(
+        client_id=user.client_id,
+        psychologist_id=None,
+        code=confirmation_code,
+        email=user.email,
+        createdAt=datetime.now(timezone.utc),
+        confirmedAt=None,
+        type=EmailConfirmationTypeEnum.REGISTRATION
+    )
+    db.add(confirmation_code_request)
     await db.commit()
-    await db.refresh(user)
+    
+    await send_confirmation_email(user_data.email, confirmation_code, "registration")
 
     return user_response
 
@@ -86,7 +108,9 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(login_data.password, user.password):
-        raise HTTPException(status_code=401, detail="Invalid login or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid login or password",
+                            headers={"WWW-Authenticate": "Bearer"})
 
     jwt_token = create_jwt_token({"user_id": user.client_id})
 
@@ -97,6 +121,7 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
         first_name=user.first_name,
         last_name=user.last_name,
         birthAt=user.birthAt.isoformat(),
+        is_verified=user.is_verified,
         jwt_token=jwt_token
     )
 

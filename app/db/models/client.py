@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
@@ -20,6 +20,7 @@ class Client(Base):
     birthAt = Column(DateTime, nullable=False)
     sex = Column(PgEnum(SexEnum, name="sex", create_type=False), nullable=False)
     client_photo = Column(String, nullable=True)
+    is_verified = Column(Boolean, nullable=False, default=False)
 
     psychologists = relationship(
         "Psychologist",

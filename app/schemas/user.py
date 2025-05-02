@@ -22,6 +22,7 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str
     birthAt: str  # ISO format date yyyy-mm-dd
+    is_verified: bool
     jwt_token: str
 
 

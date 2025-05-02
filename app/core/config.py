@@ -8,13 +8,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     # SMTP settings
-    # MAIL_USERNAME: str = "your-email@gmail.com"
-    # MAIL_PASSWORD: str = "your-app-password"
-    # MAIL_FROM: str = "your-email@gmail.com"
-    # MAIL_PORT: int = 587
-    # MAIL_SERVER: str = "smtp.gmail.com"
-    # MAIL_TLS: bool = True
-    # MAIL_SSL: bool = False
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_PORT: int
+    MAIL_SERVER: str
+    MAIL_TLS: bool
+    MAIL_SSL: bool
+    CODE_EXPIRE_MINUTES: int
 
     class Config:
         env_file = ".env"

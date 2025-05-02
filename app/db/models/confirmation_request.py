@@ -15,8 +15,8 @@ class ConfirmationRequest(Base):
     psychologist_id = Column(Integer, ForeignKey("psychologists.psychologist_id"), nullable=True)
     code = Column(String, nullable=False)
     email = Column(String, nullable=False)
-    createdAt = Column(DateTime, nullable=False)
-    confirmedAt = Column(DateTime, nullable=True)
+    createdAt = Column(DateTime(timezone=True), nullable=False)
+    confirmedAt = Column(DateTime(timezone=True), nullable=True)
     type = Column(PgEnum(EmailConfirmationTypeEnum, name="confirmation_type", create_type=False), nullable=False)
 
     client = relationship("Client", back_populates="confirmation_requests")
