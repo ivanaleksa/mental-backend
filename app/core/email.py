@@ -1,7 +1,6 @@
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from app.core.config import settings
 
-
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
     MAIL_PASSWORD=settings.MAIL_PASSWORD,
@@ -18,6 +17,7 @@ conf = ConnectionConfig(
 
 fast_mail = FastMail(conf)
 
+
 async def send_confirmation_email(email: str, code: str, action: str):
     subject = f"Подтверждение {action}"
     body = f"""
@@ -26,12 +26,12 @@ async def send_confirmation_email(email: str, code: str, action: str):
     <p>У вас есть <b>3 часа</b> для подтверждения аккаунта.</p>
     <p>Если вы не запрашивали это действие, проигнорируйте это письмо.</p>
     """
-    
+
     message = MessageSchema(
         subject=subject,
         recipients=[email],
         body=body,
         subtype="html"
     )
-    
+
     await fast_mail.send_message(message)

@@ -85,7 +85,7 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
     )
     db.add(confirmation_code_request)
     await db.commit()
-    
+
     await send_confirmation_email(user_data.email, confirmation_code, "registration")
 
     return user_response

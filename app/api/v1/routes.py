@@ -51,7 +51,8 @@ async def change_password(update_info: UserUpdatePassword, db: AsyncSession = De
 
 
 @router.post("/confirm-email/{code}")
-async def confirm_email(code: str, current_user: Client = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def confirm_email(code: str, current_user: Client = Depends(get_current_user),
+                        db: AsyncSession = Depends(get_db)):
     """
     Confirm the email of a user using a confirmation code.
     """
