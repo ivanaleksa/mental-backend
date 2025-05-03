@@ -18,7 +18,7 @@ from app.dependencies import get_current_user
 from app.core.email import send_confirmation_email
 from app.core.config import settings
 
-router = APIRouter()
+router = APIRouter(tags=["UserAuthentication"])
 
 
 @router.get("/healthcheck")
