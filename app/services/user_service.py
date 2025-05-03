@@ -59,7 +59,7 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
     await db.commit()
     await db.refresh(user)
 
-    jwt_token = create_jwt_token({"user_id": user.client_id})
+    jwt_token = create_jwt_token(data={"sub": user.login})
 
     user_response = UserResponse(
         user_id=user.client_id,
