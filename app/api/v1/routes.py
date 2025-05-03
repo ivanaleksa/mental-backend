@@ -1,13 +1,22 @@
+from datetime import datetime, timezone, timedelta
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import delete
 
 from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword
 from app.db.session import get_db
 from app.db.models.client import Client
+from app.db.models.confirmation_request import ConfirmationRequest
+from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
 from app.services.user_service import register_user_service, login_user_service, update_password_service
 from app.services.auth_service import confirm_email_service
 from app.dependencies import get_current_user
+from app.core.email import send_confirmation_email
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -63,9 +72,46 @@ async def confirm_email(code: str, current_user: Client = Depends(get_current_us
 
 
 @router.post("/email/send-new")
-async def send_new_email_confirmation(current_user: Client = Depends(get_current_user),
+async def send_new_email_confirmation(current_user: Client = Depends(get_current_user), 
                                       db: AsyncSession = Depends(get_db)):
     """
-    Send a new email confirmation email in the case of needing one more (for example, the previous is expired)
+    Send a new email confirmation email in the case of needing one more (for example, the previous is expired).
+        - If no confirmation code exists, a new one is generated and sent.
+        - If a code exists and has not expired, returns an error.
+        - If a code exists and has expired, the old one is deleted, a new one is generated, and sent.
     """
-    pass
+    if current_user.is_verified:
+        raise HTTPException(status_code=400, detail="Email already verified.")
+
+    stmt = select(ConfirmationRequest).where(
+        ConfirmationRequest.client_id == current_user.client_id,
+        ConfirmationRequest.type == EmailConfirmationTypeEnum.REGISTRATION,
+        ConfirmationRequest.confirmedAt.is_(None)
+    )
+    result = await db.execute(stmt)
+    confirmation_request = result.scalar_one_or_none()
+
+    if confirmation_request:
+        expiration_time = confirmation_request.createdAt + timedelta(minutes=settings.CODE_EXPIRE_MINUTES)
+        if datetime.now(timezone.utc) <= expiration_time:
+            raise HTTPException(status_code=400, detail="Previous confirmation code has not expired yet.")
+        else:
+            await db.execute(delete(ConfirmationRequest).where(ConfirmationRequest.client_id == confirmation_request.client_id))
+            await db.commit()
+
+    confirmation_code = secrets.token_hex(8)
+    new_confirmation_request = ConfirmationRequest(
+        client_id=current_user.client_id,
+        psychologist_id=None,
+        code=confirmation_code,
+        email=current_user.email,
+        createdAt=datetime.now(timezone.utc),
+        confirmedAt=None,
+        type=EmailConfirmationTypeEnum.REGISTRATION
+    )
+    db.add(new_confirmation_request)
+    await db.commit()
+
+    await send_confirmation_email(current_user.email, confirmation_code, "registration")
+
+    return {"message": "Confirmation email sent."}
