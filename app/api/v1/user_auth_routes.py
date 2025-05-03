@@ -49,7 +49,9 @@ async def login_user(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/user/change-password", response_model=UserResponse)
-async def change_password(update_info: UserUpdatePassword, db: AsyncSession = Depends(get_db)):
+async def change_password(update_info: UserUpdatePassword,
+                          current_user: Client = Depends(get_current_user),
+                          db: AsyncSession = Depends(get_db)):
     """
     Change the password of a user.
     """

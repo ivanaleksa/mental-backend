@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1.routes import router as api_router
+from app.api.v1.user_auth_routes import router as api_router
 
 
 app = FastAPI(title="Mental Platform")
