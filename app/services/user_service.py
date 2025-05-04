@@ -6,11 +6,13 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword
+from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword, UserResetPass
 from app.core.security import hash_password, create_jwt_token, verify_password
 from app.db.models.client import Client
+from app.db.models.psychologist import Psychologist
 from app.db.models.confirmation_request import ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
+from app.db.enums.user_type_enum import UserTypeEnum
 from app.core.email import send_confirmation_email
 
 
@@ -56,7 +58,7 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
     )
 
     db.add(user)
-    await db.commit()
+    await db.flush()  # get user_id but without commiting
     await db.refresh(user)
 
     jwt_token = create_jwt_token(data={"sub": user.login})
@@ -69,6 +71,8 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
         last_name=user.last_name,
         birthAt=user_data.birthAt,
         is_verified=False,
+        sex=user_data.sex,
+        user_type=UserTypeEnum.CLIENT,
         jwt_token=jwt_token
     )
 
@@ -83,10 +87,15 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
         confirmedAt=None,
         type=EmailConfirmationTypeEnum.REGISTRATION
     )
+
+    try:
+        await send_confirmation_email(user_data.email, confirmation_code, "registration")
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to send confirmation email")
+
     db.add(confirmation_code_request)
     await db.commit()
-
-    await send_confirmation_email(user_data.email, confirmation_code, "registration")
 
     return user_response
 
@@ -103,9 +112,14 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
         UserResponse: An object containing the authenticated user's data.
     """
 
-    stmt = select(Client).where(Client.login == login_data.login)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
+    if login_data.user_type == UserTypeEnum.CLIENT:
+        stmt = select(Client).where(Client.login == login_data.login)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+    else:
+        stmt = select(Psychologist).where(Psychologist.login == login_data.login)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
 
     if not user or not verify_password(login_data.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -122,6 +136,8 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
         last_name=user.last_name,
         birthAt=user.birthAt.isoformat(),
         is_verified=user.is_verified,
+        sex=user.sex,
+        user_type=login_data.user_type,
         jwt_token=jwt_token
     )
 
@@ -140,9 +156,14 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
         UserResponse: An object containing the updated user's data.
     """
 
-    stmt = select(Client).where(Client.client_id == update_info.user_id)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
+    if update_info.user_type == UserTypeEnum.CLIENT:
+        stmt = select(Client).where(Client.client_id == update_info.user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+    else:
+        stmt = select(Psychologist).where(Psychologist.psychologist_id == update_info.user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
 
     if not user or not verify_password(update_info.old_password, user.password):
         raise HTTPException(status_code=401, detail="Invalid old password")

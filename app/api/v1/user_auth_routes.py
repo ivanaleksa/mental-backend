@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
 
-from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword
+from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword, UserResetPass
 from app.db.session import get_db
 from app.db.models.client import Client
 from app.db.models.confirmation_request import ConfirmationRequest
@@ -44,6 +44,41 @@ async def login_user(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     """
     try:
         return await login_user_service(login_data, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/user/reset-password")
+async def reset_password(reset_data: UserResetPass, db: AsyncSession = Depends(get_db)):
+    """
+    Reset the password of a user.
+    """
+    if reset_data.new_password != reset_data.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match.")
+
+    try:
+        stmt = select(Client).where(Client.login == reset_data.login, Client.email == reset_data.email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+        confirmation_code = secrets.token_hex(8)
+        new_confirmation_request = ConfirmationRequest(
+            client_id=user.client_id,
+            psychologist_id=None,
+            code=confirmation_code,
+            email=user.email,
+            createdAt=datetime.now(timezone.utc),
+            confirmedAt=None,
+            type=EmailConfirmationTypeEnum.PASSWORD_RESET
+        )
+        db.add(new_confirmation_request)
+        await db.commit()
+
+        await send_confirmation_email(user.email, confirmation_code, "registration")
+        return {"message": "Email message with new confirmation code is sent."}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
