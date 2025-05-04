@@ -5,14 +5,10 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.core.config import settings
-from app.db.models.client import Client
-from app.db.models.psychologist import Psychologist
-from app.db.models.confirmation_request import ConfirmationRequest
-from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
-from app.db.enums.user_type_enum import UserTypeEnum
+from app.db.models import Client, Psychologist, ConfirmationRequest
+from app.db.enums import UserTypeEnum, EmailConfirmationTypeEnum
 from app.schemas.user import UserResetPassConfirm
-from app.core.security import hash_password
+from app.core import hash_password, settings
 
 
 async def confirm_email_service(db: AsyncSession, code: str, user: Client) -> dict:

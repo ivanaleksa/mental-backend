@@ -7,8 +7,7 @@ from sqlalchemy.future import select
 from jose import JWTError, jwt
 
 from app.core.config import settings
-from app.db.models.client import Client
-from app.db.models.psychologist import Psychologist
+from app.db.models import Client, Psychologist
 from app.db.session import get_db
 from app.db.enums.user_type_enum import UserTypeEnum
 

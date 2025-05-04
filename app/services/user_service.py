@@ -12,14 +12,12 @@ from app.schemas.user import (
     UserUpdatePassword, UserResetPass, 
     UserUpdate, UserSchema
 )
-from app.core.security import hash_password, create_jwt_token, verify_password
-from app.db.models.client import Client
-from app.db.models.psychologist import Psychologist
-from app.db.models.confirmation_request import ConfirmationRequest
-from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
-from app.db.enums.user_type_enum import UserTypeEnum
-from app.core.email import send_confirmation_email
-from app.core.config import settings
+from app.db.models import Client, Psychologist, ConfirmationRequest
+from app.db.enums import EmailConfirmationTypeEnum, UserTypeEnum
+from app.core import (
+    settings, send_confirmation_email, 
+    hash_password, verify_password, create_jwt_token
+)
 
 
 async def register_user_service(user_data: UserCreate, db: AsyncSession) -> UserResponse:

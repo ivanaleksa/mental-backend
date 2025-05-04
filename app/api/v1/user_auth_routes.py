@@ -7,17 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
 
-from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword, UserResetPass, UserResetPassConfirm
+from app.schemas import (
+    UserCreate, UserResponse, UserLogin,
+    UserUpdatePassword, UserResetPass, UserResetPassConfirm
+)
 from app.db.session import get_db
-from app.db.models.client import Client
-from app.db.models.psychologist import Psychologist
-from app.db.models.confirmation_request import ConfirmationRequest
+from app.db.models import Client, Psychologist, ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
 from app.services.user_service import register_user_service, login_user_service, update_password_service, reset_password_service
 from app.services.auth_service import confirm_email_service, pass_reset_confirmation_service
 from app.dependencies import get_current_user
-from app.core.email import send_confirmation_email
-from app.core.config import settings
+from app.core import send_confirmation_email, settings
 
 router = APIRouter(tags=["UserAuthentication"])
 
