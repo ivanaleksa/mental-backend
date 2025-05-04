@@ -7,13 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
 
-from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword, UserResetPass
+from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword, UserResetPass, UserResetPassConfirm
 from app.db.session import get_db
 from app.db.models.client import Client
+from app.db.models.psychologist import Psychologist
 from app.db.models.confirmation_request import ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
-from app.services.user_service import register_user_service, login_user_service, update_password_service
-from app.services.auth_service import confirm_email_service
+from app.services.user_service import register_user_service, login_user_service, update_password_service, reset_password_service
+from app.services.auth_service import confirm_email_service, pass_reset_confirmation_service
 from app.dependencies import get_current_user
 from app.core.email import send_confirmation_email
 from app.core.config import settings
@@ -53,39 +54,27 @@ async def reset_password(reset_data: UserResetPass, db: AsyncSession = Depends(g
     """
     Reset the password of a user.
     """
-    if reset_data.new_password != reset_data.confirm_password:
-        raise HTTPException(status_code=400, detail="Passwords do not match.")
-
     try:
-        stmt = select(Client).where(Client.login == reset_data.login, Client.email == reset_data.email)
-        result = await db.execute(stmt)
-        user = result.scalar_one_or_none()
+        return await reset_password_service(reset_data, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found.")
 
-        confirmation_code = secrets.token_hex(8)
-        new_confirmation_request = ConfirmationRequest(
-            client_id=user.client_id,
-            psychologist_id=None,
-            code=confirmation_code,
-            email=user.email,
-            createdAt=datetime.now(timezone.utc),
-            confirmedAt=None,
-            type=EmailConfirmationTypeEnum.PASSWORD_RESET
-        )
-        db.add(new_confirmation_request)
-        await db.commit()
-
-        await send_confirmation_email(user.email, confirmation_code, "registration")
-        return {"message": "Email message with new confirmation code is sent."}
+@router.post("/user/reset-password/confirm")
+async def confirm_reset_password(reset_data: UserResetPassConfirm,
+                                 db: AsyncSession = Depends(get_db)):
+    """
+    Confirm the password reset using a confirmation code.
+    """
+    try:
+        return await pass_reset_confirmation_service(reset_data, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/user/change-password", response_model=UserResponse)
 async def change_password(update_info: UserUpdatePassword,
-                          current_user: Client = Depends(get_current_user),
+                          current_user: Client | Psychologist = Depends(get_current_user),
                           db: AsyncSession = Depends(get_db)):
     """
     Change the password of a user.
@@ -97,19 +86,19 @@ async def change_password(update_info: UserUpdatePassword,
 
 
 @router.post("/email/confirm/{code}")
-async def confirm_email(code: str, current_user: Client = Depends(get_current_user),
+async def confirm_email(code: str, current_user: Client | Psychologist = Depends(get_current_user),
                         db: AsyncSession = Depends(get_db)):
     """
     Confirm the email of a user using a confirmation code.
     """
     try:
-        return await confirm_email_service(db, code, current_user.client_id)
+        return await confirm_email_service(db, code, current_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/email/send-new")
-async def send_new_email_confirmation(current_user: Client = Depends(get_current_user), 
+async def send_new_email_confirmation(current_user: Client | Psychologist = Depends(get_current_user), 
                                       db: AsyncSession = Depends(get_db)):
     """
     Send a new email confirmation email in the case of needing one more (for example, the previous is expired).
@@ -138,7 +127,7 @@ async def send_new_email_confirmation(current_user: Client = Depends(get_current
 
     confirmation_code = secrets.token_hex(8)
     new_confirmation_request = ConfirmationRequest(
-        client_id=current_user.client_id,
+        client_id=current_user.client_id,  # Because psychologist won't be able to send this confirmation
         psychologist_id=None,
         code=confirmation_code,
         email=current_user.email,
@@ -146,9 +135,13 @@ async def send_new_email_confirmation(current_user: Client = Depends(get_current
         confirmedAt=None,
         type=EmailConfirmationTypeEnum.REGISTRATION
     )
+
+    try:
+        await send_confirmation_email(current_user.email, confirmation_code, "registration")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to send confirmation email")
+
     db.add(new_confirmation_request)
     await db.commit()
-
-    await send_confirmation_email(current_user.email, confirmation_code, "registration")
 
     return {"message": "Confirmation email sent."}

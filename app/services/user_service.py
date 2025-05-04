@@ -61,7 +61,7 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
     await db.flush()  # get user_id but without commiting
     await db.refresh(user)
 
-    jwt_token = create_jwt_token(data={"sub": user.login})
+    jwt_token = create_jwt_token(data={"sub": user.login, "user_type": UserTypeEnum.CLIENT})
 
     user_response = UserResponse(
         user_id=user.client_id,
@@ -126,10 +126,10 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
                             detail="Invalid login or password",
                             headers={"WWW-Authenticate": "Bearer"})
 
-    jwt_token = create_jwt_token(data={"sub": user.login})
+    jwt_token = create_jwt_token(data={"sub": user.login, "user_type": login_data.user_type})
 
     user_response = UserResponse(
-        user_id=user.client_id,
+        user_id=user.client_id if login_data.user_type == UserTypeEnum.CLIENT else user.psychologist_id,
         login=user.login,
         email=user.email,
         first_name=user.first_name,
@@ -172,10 +172,10 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
     await db.commit()
     await db.refresh(user)
 
-    jwt_token = create_jwt_token(data={"sub": user.login})
+    jwt_token = create_jwt_token(data={"sub": user.login, "user_type": update_info.user_type})
 
     user_response = UserResponse(
-        user_id=user.client_id,
+        user_id=user.client_id if update_info.user_type == UserTypeEnum.CLIENT else user.psychologist_id,
         login=user.login,
         email=user.email,
         first_name=user.first_name,
@@ -185,3 +185,50 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
     )
 
     return user_response
+
+
+async def reset_password_service(reset_data: UserResetPass, db: AsyncSession) -> UserResponse:
+    """
+    Reset the user's password.
+
+    Args:
+        reset_data (UserResetPass): The information needed to reset the password.
+        db (AsyncSession): The database session.
+
+    Returns:
+        UserResponse: An object containing the updated user's data.
+    """
+
+    if reset_data.user_type == UserTypeEnum.CLIENT:
+        stmt = select(Client).where(Client.login == reset_data.login, Client.email == reset_data.email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+    else:
+        stmt = select(Psychologist).where(Psychologist.login == reset_data.login, Psychologist.email == reset_data.email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Send confirmation code
+    confirmation_code = secrets.token_hex(8)
+    confirmation_code_request = ConfirmationRequest(
+        client_id=user.client_id if reset_data.user_type == UserTypeEnum.CLIENT else None,
+        psychologist_id=user.psychologist_id if reset_data.user_type == UserTypeEnum.PSYCHOLOGIST else None,
+        code=confirmation_code,
+        email=user.email,
+        createdAt=datetime.now(timezone.utc),
+        confirmedAt=None,
+        type=EmailConfirmationTypeEnum.PASSWORD_RESET
+    )
+
+    try:
+        await send_confirmation_email(reset_data.email, confirmation_code, "password_reset")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to send confirmation email")
+
+    db.add(confirmation_code_request)
+    await db.commit()
+
+    return {"message": "Email message with the confirmation code is sent."}

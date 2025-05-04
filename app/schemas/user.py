@@ -61,5 +61,11 @@ class UserResetPass(BaseModel):
     login: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     user_type: UserTypeEnum
+
+
+class UserResetPassConfirm(BaseModel):
+    login: str = Field(..., min_length=3, max_length=50)
+    user_type: UserTypeEnum
+    code: str
     new_password: str = Field(..., min_length=8, max_length=100)
     confirm_password: str = Field(..., min_length=8, max_length=100)
