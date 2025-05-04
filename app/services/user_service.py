@@ -9,13 +9,13 @@ from sqlalchemy.future import select
 
 from app.schemas.user import (
     UserCreate, UserResponse, UserLogin,
-    UserUpdatePassword, UserResetPass, 
+    UserUpdatePassword, UserResetPass,
     UserUpdate, UserSchema
 )
 from app.db.models import Client, Psychologist, ConfirmationRequest
 from app.db.enums import EmailConfirmationTypeEnum, UserTypeEnum
 from app.core import (
-    settings, send_confirmation_email, 
+    settings, send_confirmation_email,
     hash_password, verify_password, create_jwt_token
 )
 
@@ -212,7 +212,8 @@ async def reset_password_service(reset_data: UserResetPass, db: AsyncSession) ->
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
     else:
-        stmt = select(Psychologist).where(Psychologist.login == reset_data.login, Psychologist.email == reset_data.email)
+        stmt = select(Psychologist).where(Psychologist.login == reset_data.login,
+                                          Psychologist.email == reset_data.email)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
 
@@ -270,7 +271,7 @@ async def update_user_profile_service(user_login: str, update_data: UserUpdate, 
             birth_date = datetime.fromisoformat(update_data.birthAt)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid birthAt format. Use ISO format (yyyy-mm-dd)")
-        
+
         user.birthAt = birth_date
 
     await db.commit()
@@ -292,9 +293,9 @@ async def update_user_profile_service(user_login: str, update_data: UserUpdate, 
 
 
 async def update_user_photo(
-    user_login: str,
-    update_data: dict,
-    db: AsyncSession
+        user_login: str,
+        update_data: dict,
+        db: AsyncSession
 ) -> dict:
     """
     Update the user's profile photo.
@@ -316,7 +317,7 @@ async def update_user_photo(
 
     if not photo:
         raise HTTPException(status_code=400, detail="No photo file provided")
-    
+
     file_extension = os.path.splitext(photo.filename)[1]  # .jpg, .png etc.
     unique_filename = f"{user.login}{file_extension}"
     file_path = os.path.join(settings.MEDIA_DIRECTORY, unique_filename)

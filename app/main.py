@@ -12,6 +12,7 @@ def ensure_directories():
     target_dir = os.path.join(settings.MEDIA_DIRECTORY)
     os.makedirs(target_dir, exist_ok=True)
 
+
 ensure_directories()
 
 app = FastAPI(title="Mental Platform")

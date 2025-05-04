@@ -32,7 +32,7 @@ async def confirm_email_service(db: AsyncSession, code: str, user: Client) -> di
     confirmation_request.confirmedAt = datetime.now(timezone.utc)
 
     if confirmation_request.type == EmailConfirmationTypeEnum.REGISTRATION:
-        # Email confirmation is available only for CLIENT type, psychology type can be aligned only after confirmation
+        # Email confirmation is available only for CLIENT type, a psychology type can be aligned only after confirmation
         stmt = select(Client).where(Client.client_id == confirmation_request.client_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()

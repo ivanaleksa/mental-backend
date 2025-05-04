@@ -10,7 +10,7 @@ from app.schemas.user import UserSchema, UserUpdate
 from app.services.user_service import update_user_profile_service, update_user_photo
 from app.dependencies import get_current_user
 from app.db.session import get_db
-
+from app.core.config import settings
 
 router = APIRouter(tags=["User"])
 
@@ -22,7 +22,7 @@ async def get_user_me(current_user: Client = Depends(get_current_user)) -> UserS
     """
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     user_info = UserSchema(
         login=current_user.login,
         email=current_user.email,
@@ -33,15 +33,15 @@ async def get_user_me(current_user: Client = Depends(get_current_user)) -> UserS
         sex=current_user.sex,
         client_photo=current_user.client_photo,
     )
-    
+
     return user_info
 
 
 @router.patch("/user/me", response_model=UserSchema)
 async def update_profile(
-    update_data: UserUpdate,
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)):
+        update_data: UserUpdate,
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)):
     """
     Update the current user's profile information.
     """
@@ -53,10 +53,10 @@ async def update_profile(
 
 @router.patch("/user/me/photo")
 async def update_profile_photo(
-    photo: UploadFile = Form(None, description="Profile photo file"),
-    user_type: UserTypeEnum = Form(..., description="Type of user (client or psychologist)"),
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        photo: UploadFile = Form(None, description="Profile photo file"),
+        user_type: UserTypeEnum = Form(..., description="Type of user (client or psychologist)"),
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """
     Update the profile photo of the authenticated user.
@@ -64,13 +64,12 @@ async def update_profile_photo(
     if not photo:
         raise HTTPException(status_code=400, detail="No photo file provided")
 
-    MAX_FILE_SIZE = 1 * 1024 * 1024  # 1 MB
-    if photo.size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail=f"File size exceeds {MAX_FILE_SIZE / (1024 * 1024)}MB limit")
+    if photo.size > settings.MAX_PROFILE_IMAGE_SIZE:
+        raise HTTPException(status_code=400,
+                            detail=f"File size exceeds {settings.MAX_PROFILE_IMAGE_SIZE / (1024 * 1024)}MB limit")
 
-    ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
     file_extension = os.path.splitext(photo.filename.lower())[1]
-    if file_extension not in ALLOWED_EXTENSIONS:
+    if file_extension not in settings.ALLOWED_PROFILE_IMAGE_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Unsupported file format. Use .jpg, .jpeg, or .png")
 
     update_data = {"photo": photo, "user_type": user_type}

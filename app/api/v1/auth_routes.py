@@ -14,7 +14,8 @@ from app.schemas import (
 from app.db.session import get_db
 from app.db.models import Client, Psychologist, ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
-from app.services.user_service import register_user_service, login_user_service, update_password_service, reset_password_service
+from app.services.user_service import register_user_service, login_user_service, update_password_service, \
+    reset_password_service
 from app.services.auth_service import confirm_email_service, pass_reset_confirmation_service
 from app.dependencies import get_current_user
 from app.core import send_confirmation_email, settings
@@ -98,7 +99,7 @@ async def confirm_email(code: str, current_user: Client | Psychologist = Depends
 
 
 @router.post("/email/send-new")
-async def send_new_email_confirmation(current_user: Client | Psychologist = Depends(get_current_user), 
+async def send_new_email_confirmation(current_user: Client | Psychologist = Depends(get_current_user),
                                       db: AsyncSession = Depends(get_db)):
     """
     Send a new email confirmation email in the case of needing one more (for example, the previous is expired).
@@ -122,7 +123,8 @@ async def send_new_email_confirmation(current_user: Client | Psychologist = Depe
         if datetime.now(timezone.utc) <= expiration_time:
             raise HTTPException(status_code=400, detail="Previous confirmation code has not expired yet.")
         else:
-            await db.execute(delete(ConfirmationRequest).where(ConfirmationRequest.client_id == confirmation_request.client_id))
+            await db.execute(
+                delete(ConfirmationRequest).where(ConfirmationRequest.client_id == confirmation_request.client_id))
             await db.commit()
 
     confirmation_code = secrets.token_hex(8)

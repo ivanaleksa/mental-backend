@@ -35,12 +35,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
         stmt = select(Client).where(Client.login == login)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
-    elif user_type == UserTypeEnum.PSYCHOLOGIST:
+    else:
         stmt = select(Psychologist).where(Psychologist.login == login)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
-    
+
     if user is None:
         raise credentials_exception
-    
+
     return user
