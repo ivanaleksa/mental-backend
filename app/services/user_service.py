@@ -263,7 +263,12 @@ async def update_user_profile_service(user_login: str, update_data: UserUpdate, 
     if update_data.last_name is not None:
         user.last_name = update_data.last_name
     if update_data.birthAt is not None:
-        user.birthAt = update_data.birthAt
+        try:
+            birth_date = datetime.fromisoformat(update_data.birthAt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid birthAt format. Use ISO format (yyyy-mm-dd)")
+        
+        user.birthAt = birth_date
 
     await db.commit()
     await db.refresh(user)
