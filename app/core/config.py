@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     MAIL_SSL: bool
     CODE_EXPIRE_MINUTES: int
 
+    
+    MEDIA_DIRECTORY: str
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

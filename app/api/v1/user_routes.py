@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.client import Client
+from app.db.enums.user_type_enum import UserTypeEnum
 from app.schemas.user import UserSchema, UserUpdate
-from app.services.user_service import update_user_profile_service
+from app.services.user_service import update_user_profile_service, update_user_photo
 from app.dependencies import get_current_user
 from app.db.session import get_db
 
@@ -46,3 +49,29 @@ async def update_profile(
         return await update_user_profile_service(current_user.login, update_data, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.patch("/user/me/photo")
+async def update_profile_photo(
+    photo: UploadFile = Form(None, description="Profile photo file"),
+    user_type: UserTypeEnum = Form(..., description="Type of user (client or psychologist)"),
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update the profile photo of the authenticated user.
+    """
+    if not photo:
+        raise HTTPException(status_code=400, detail="No photo file provided")
+
+    MAX_FILE_SIZE = 1 * 1024 * 1024  # 1 MB
+    if photo.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail=f"File size exceeds {MAX_FILE_SIZE / (1024 * 1024)}MB limit")
+
+    ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+    file_extension = os.path.splitext(photo.filename.lower())[1]
+    if file_extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Unsupported file format. Use .jpg, .jpeg, or .png")
+
+    update_data = {"photo": photo, "user_type": user_type}
+    return await update_user_photo(current_user.login, update_data, db)

@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 import secrets
+import os
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -16,9 +17,9 @@ from app.db.models.client import Client
 from app.db.models.psychologist import Psychologist
 from app.db.models.confirmation_request import ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
-from app.db.enums.sex_enum import SexEnum
 from app.db.enums.user_type_enum import UserTypeEnum
 from app.core.email import send_confirmation_email
+from app.core.config import settings
 
 
 async def register_user_service(user_data: UserCreate, db: AsyncSession) -> UserResponse:
@@ -78,6 +79,7 @@ async def register_user_service(user_data: UserCreate, db: AsyncSession) -> User
         is_verified=False,
         sex=user_data.sex,
         user_type=UserTypeEnum.CLIENT,
+        client_photo=user.client_photo,
         jwt_token=jwt_token
     )
 
@@ -143,6 +145,7 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
         is_verified=user.is_verified,
         sex=user.sex,
         user_type=login_data.user_type,
+        client_photo=user.client_photo,
         jwt_token=jwt_token
     )
 
@@ -186,6 +189,8 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
         first_name=user.first_name,
         last_name=user.last_name,
         birthAt=user.birthAt.isoformat(),
+        is_verified=user.is_verified,
+        client_photo=user.client_photo,
         jwt_token=jwt_token
     )
 
@@ -286,3 +291,49 @@ async def update_user_profile_service(user_login: str, update_data: UserUpdate, 
     )
 
     return user_response
+
+
+async def update_user_photo(
+    user_login: str,
+    update_data: dict,
+    db: AsyncSession
+) -> dict:
+    """
+    Update the user's profile photo.
+    """
+
+    photo: UploadFile = update_data.get("photo")
+
+    if update_data["user_type"] == UserTypeEnum.CLIENT:
+        stmt = select(Client).where(Client.login == user_login)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+    else:
+        stmt = select(Psychologist).where(Psychologist.login == user_login)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not photo:
+        raise HTTPException(status_code=400, detail="No photo file provided")
+    
+    file_extension = os.path.splitext(photo.filename)[1]  # .jpg, .png etc.
+    unique_filename = f"{user.login}{file_extension}"
+    file_path = os.path.join(settings.MEDIA_DIRECTORY, unique_filename)
+
+    try:
+        with open(file_path, "wb") as buffer:
+            buffer.write(await photo.read())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save photo: {str(e)}")
+
+    user.client_photo = file_path
+    await db.commit()
+    await db.refresh(user)
+
+    return {
+        "message": "Profile photo updated successfully",
+        "client_photo": user.client_photo
+    }

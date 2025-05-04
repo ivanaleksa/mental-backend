@@ -45,6 +45,7 @@ class UserResponse(BaseModel):
     is_verified: bool
     sex: SexEnum
     user_type: UserTypeEnum
+    client_photo: str | None
     jwt_token: str
 
 
