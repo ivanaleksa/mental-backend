@@ -6,12 +6,17 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdatePassword, UserResetPass
+from app.schemas.user import (
+    UserCreate, UserResponse, UserLogin,
+    UserUpdatePassword, UserResetPass, 
+    UserUpdate, UserSchema
+)
 from app.core.security import hash_password, create_jwt_token, verify_password
 from app.db.models.client import Client
 from app.db.models.psychologist import Psychologist
 from app.db.models.confirmation_request import ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
+from app.db.enums.sex_enum import SexEnum
 from app.db.enums.user_type_enum import UserTypeEnum
 from app.core.email import send_confirmation_email
 
@@ -232,3 +237,47 @@ async def reset_password_service(reset_data: UserResetPass, db: AsyncSession) ->
     await db.commit()
 
     return {"message": "Email message with the confirmation code is sent."}
+
+
+async def update_user_profile_service(user_login: str, update_data: UserUpdate, db: AsyncSession) -> UserSchema:
+    """
+    Update the user's profile information.
+
+    Args:
+        user_login (str): The login of the user to be updated.
+        update_data (UserUpdate): The new data for the user.
+        db (AsyncSession): The database session.
+
+    Returns:
+        UserResponse: An object containing the updated user's data.
+    """
+    stmt = select(Client).where(Client.login == user_login)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if update_data.first_name is not None:
+        user.first_name = update_data.first_name
+    if update_data.last_name is not None:
+        user.last_name = update_data.last_name
+    if update_data.birthAt is not None:
+        user.birthAt = update_data.birthAt
+
+    await db.commit()
+    await db.refresh(user)
+
+    user_response = UserSchema(
+        login=user.login,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        birthAt=user.birthAt.isoformat(),
+        sex=user.sex,
+        client_photo=user.client_photo,
+        is_verified=user.is_verified,
+        user_type=UserTypeEnum.CLIENT
+    )
+
+    return user_response

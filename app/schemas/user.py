@@ -1,4 +1,8 @@
+from typing import Optional
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr, Field
+
 from app.db.enums.sex_enum import SexEnum
 from app.db.enums.user_type_enum import UserTypeEnum
 
@@ -69,3 +73,27 @@ class UserResetPassConfirm(BaseModel):
     code: str
     new_password: str = Field(..., min_length=8, max_length=100)
     confirm_password: str = Field(..., min_length=8, max_length=100)
+
+
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    birthAt: Optional[str] = None  # ISO (yyyy-mm-dd)
+
+    class Config:
+        from_attributes = True
+
+    @staticmethod
+    def validate_birth_at(value: Optional[str]) -> Optional[datetime]:
+        if value is None:
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            raise ValueError("Invalid birthAt format. Use ISO format (yyyy-mm-dd)")
+
+    @classmethod
+    def validate(cls, values):
+        if "birthAt" in values:
+            values["birthAt"] = cls.validate_birth_at(values["birthAt"])
+        return values
