@@ -8,7 +8,8 @@ from app.db.models.client import Client
 from app.db.enums.user_type_enum import UserTypeEnum
 from app.schemas.user import UserSchema, UserUpdate
 from app.services.user_service import update_user_profile_service, update_user_photo
-from app.services.client_request_service import create_psychologist_application
+from app.services.client_request_service import create_psychologist_application, get_client_request_status_service
+from app.services.psychologist_request_service import get_psychologist_requests_service
 from app.dependencies import get_current_user
 from app.db.session import get_db
 from app.core.config import settings
@@ -103,4 +104,18 @@ async def get_client_request_status(
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    return await get_client_request_status(current_user.client_id, db)
+    return await get_client_request_status_service(current_user.client_id, db)
+
+
+@router.get("/user/psychologist-request")
+async def get_psychologist_requests(
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all psychologist requests for the authenticated client.
+    """
+    requests = await get_psychologist_requests_service(current_user.client_id, db)
+    if not requests:
+        return {"message": "No psychologist requests found", "requests": []}
+    return {"requests": requests}

@@ -97,3 +97,14 @@ class UserUpdate(BaseModel):
         if "birthAt" in values:
             values["birthAt"] = cls.validate_birth_at(values["birthAt"])
         return values
+
+
+class PsychologistRequestResponse(BaseModel):
+    login: str
+    first_name: str
+    last_name: str
+    sex: str
+    psychologist_photo: Optional[str] = None
+
+    class Config:
+        from_attributes = True

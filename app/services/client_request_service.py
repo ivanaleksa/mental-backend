@@ -59,7 +59,7 @@ async def create_psychologist_application(
     }
 
 
-async def get_client_request_status(client_id: int, db: AsyncSession) -> dict:
+async def get_client_request_status_service(client_id: int, db: AsyncSession) -> dict:
     """
     Get the status of the client's psychologist application.
     """
