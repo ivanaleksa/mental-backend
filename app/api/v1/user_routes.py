@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.client import Client
-from app.db.enums.user_type_enum import UserTypeEnum
+from app.db.models import Client
+from app.db.enums import UserTypeEnum, RequestStatusEnum
 from app.schemas.user import UserSchema, UserUpdate
 from app.services.user_service import update_user_profile_service, update_user_photo
 from app.services.client_request_service import create_psychologist_application, get_client_request_status_service
-from app.services.psychologist_request_service import get_psychologist_requests_service
+from app.services.psychologist_request_service import get_psychologist_requests_service, update_psychologist_request_status
 from app.dependencies import get_current_user
 from app.db.session import get_db
 from app.core.config import settings
@@ -119,3 +119,27 @@ async def get_psychologist_requests(
     if not requests:
         return {"message": "No psychologist requests found", "requests": []}
     return {"requests": requests}
+
+
+@router.patch("/user/psychologist-request/{request_id}/reject")
+async def reject_psychologist_request(
+    request_id: int,
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Reject a psychologist request.
+    """
+    return await update_psychologist_request_status(request_id, RequestStatusEnum.REJECTED, current_user.client_id, db)
+
+
+@router.patch("/user/psychologist-request/{request_id}/accept")
+async def accept_psychologist_request(
+    request_id: int,
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Accept a psychologist request and link client with psychologist.
+    """
+    return await update_psychologist_request_status(request_id, RequestStatusEnum.APPROVED, current_user.client_id, db)
