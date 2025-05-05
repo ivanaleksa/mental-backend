@@ -7,11 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Client
 from app.db.enums import UserTypeEnum, RequestStatusEnum
-from app.schemas.user import UserSchema, UserUpdate, PsychologistInfoResponse
+from app.schemas.user import UserSchema, UserUpdate
 from app.services.user_service import update_user_profile_service, update_user_photo
 from app.services.client_request_service import create_psychologist_application, get_client_request_status_service
 from app.services.psychologist_request_service import get_psychologist_requests_service, update_psychologist_request_status
-from app.services.psychologist_service import get_client_psychologists_service
+from app.services.psychologist_service import get_client_psychologists_service, remove_psychologist_from_client_service
 from app.dependencies import get_current_user
 from app.db.session import get_db
 from app.core.config import settings
@@ -159,3 +159,15 @@ current_user: Client = Depends(get_current_user),
     if not psychologists:
         return {"message": "No psychologists found", "psychologists": []}
     return {"psychologists": psychologists}
+
+
+@router.delete("/user/{psychologist_id}")
+async def remove_client_psychologist(
+    psychologist_id: int,
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Remove a psychologist from the authenticated client's list.
+    """
+    return await remove_psychologist_from_client_service(current_user.client_id, psychologist_id, db)
