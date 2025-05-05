@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 
@@ -10,7 +9,8 @@ from app.db.enums import UserTypeEnum, RequestStatusEnum
 from app.schemas.user import UserSchema, UserUpdate
 from app.services.user_service import update_user_profile_service, update_user_photo
 from app.services.client_request_service import create_psychologist_application, get_client_request_status_service
-from app.services.psychologist_request_service import get_psychologist_requests_service, update_psychologist_request_status
+from app.services.psychologist_request_service import get_psychologist_requests_service, \
+    update_psychologist_request_status
 from app.services.psychologist_service import get_client_psychologists_service, remove_psychologist_from_client_service
 from app.dependencies import get_current_user
 from app.db.session import get_db
@@ -82,23 +82,24 @@ async def update_profile_photo(
 
 @router.post("/user/apply-for-psychologist")
 async def apply_for_psychologist(
-    document: UploadFile = Form(..., description="Document proving psychologist qualification"),
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        document: UploadFile = Form(..., description="Document proving psychologist qualification"),
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     if not document:
         raise HTTPException(status_code=400, detail="No document file provided")
-    
+
     if document.size > settings.MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail=f"File size exceeds {settings.MAX_FILE_SIZE / (1024 * 1024)}MB limit")
-    
+        raise HTTPException(status_code=400,
+                            detail=f"File size exceeds {settings.MAX_FILE_SIZE / (1024 * 1024)}MB limit")
+
     return await create_psychologist_application(current_user.client_id, document, db)
 
 
 @router.get("/user/client-request-status")
 async def get_client_request_status(
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """
     Get the status of the client's psychologist application.
@@ -111,8 +112,8 @@ async def get_client_request_status(
 
 @router.get("/user/psychologist-request")
 async def get_psychologist_requests(
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """
     Get all psychologist requests for the authenticated client.
@@ -125,9 +126,9 @@ async def get_psychologist_requests(
 
 @router.patch("/user/psychologist-request/{request_id}/reject")
 async def reject_psychologist_request(
-    request_id: int,
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        request_id: int,
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """
     Reject a psychologist request.
@@ -137,9 +138,9 @@ async def reject_psychologist_request(
 
 @router.patch("/user/psychologist-request/{request_id}/accept")
 async def accept_psychologist_request(
-    request_id: int,
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        request_id: int,
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """
     Accept a psychologist request and link client with psychologist.
@@ -149,8 +150,8 @@ async def accept_psychologist_request(
 
 @router.get("/user/psychologists")
 async def get_client_psychologists(
-current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """
     Get all psychologists linked to the authenticated client.
@@ -163,9 +164,9 @@ current_user: Client = Depends(get_current_user),
 
 @router.delete("/user/{psychologist_id}")
 async def remove_client_psychologist(
-    psychologist_id: int,
-    current_user: Client = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        psychologist_id: int,
+        current_user: Client = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """
     Remove a psychologist from the authenticated client's list.

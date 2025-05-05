@@ -10,8 +10,8 @@ from app.schemas.user import PsychologistInfoResponse
 
 
 async def get_psychologist_requests_service(
-    client_id: int,
-    db: AsyncSession
+        client_id: int,
+        db: AsyncSession
 ) -> list[PsychologistInfoResponse]:
     """
     Get all psychologist requests for a client.
@@ -42,10 +42,10 @@ async def get_psychologist_requests_service(
 
 
 async def update_psychologist_request_status(
-    request_id: int,
-    status: RequestStatusEnum,
-    client_id: int,
-    db: AsyncSession
+        request_id: int,
+        status: RequestStatusEnum,
+        client_id: int,
+        db: AsyncSession
 ) -> dict:
     """
     Update the status of a psychologist request and handle acceptance.

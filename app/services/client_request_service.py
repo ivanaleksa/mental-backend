@@ -13,9 +13,9 @@ from app.core import settings, send_client_request_notification
 
 
 async def create_psychologist_application(
-    client_id: int,
-    document: UploadFile,
-    db: AsyncSession
+        client_id: int,
+        document: UploadFile,
+        db: AsyncSession
 ) -> dict:
     """
     Create a psychologist application for a client.
@@ -110,7 +110,7 @@ async def update_client_request(request_id: int, update_data: ClientRequestUpdat
 
         if not client:
             raise HTTPException(status_code=404, detail="Client not found")
-        
+
         if not client.is_verified:
             raise HTTPException(status_code=400, detail="Client is not verified")
 

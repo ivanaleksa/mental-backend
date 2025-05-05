@@ -9,8 +9,8 @@ from app.schemas.user import PsychologistInfoResponse
 
 
 async def get_client_psychologists_service(
-    client_id: int,
-    db: AsyncSession
+        client_id: int,
+        db: AsyncSession
 ) -> list[PsychologistInfoResponse]:
     """
     Get all psychologists linked to a client via the client_psychologist table.
@@ -42,9 +42,9 @@ async def get_client_psychologists_service(
 
 
 async def remove_psychologist_from_client_service(
-    client_id: int,
-    psychologist_id: int,
-    db: AsyncSession
+        client_id: int,
+        psychologist_id: int,
+        db: AsyncSession
 ) -> dict:
     """
     Remove the relationship between a client and a psychologist.
