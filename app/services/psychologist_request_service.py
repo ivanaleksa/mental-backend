@@ -6,13 +6,13 @@ from sqlalchemy import insert
 
 from app.db.models import PsychologistRequest, Psychologist, client_psychologist
 from app.db.enums import RequestStatusEnum
-from app.schemas.user import PsychologistRequestResponse
+from app.schemas.user import PsychologistInfoResponse
 
 
 async def get_psychologist_requests_service(
     client_id: int,
     db: AsyncSession
-) -> list[PsychologistRequestResponse]:
+) -> list[PsychologistInfoResponse]:
     """
     Get all psychologist requests for a client.
     """
@@ -29,7 +29,7 @@ async def get_psychologist_requests_service(
     for request in requests:
         psychologist: Psychologist = request.psychologist
         response_data.append(
-            PsychologistRequestResponse(
+            PsychologistInfoResponse(
                 login=psychologist.login,
                 first_name=psychologist.first_name,
                 last_name=psychologist.last_name,

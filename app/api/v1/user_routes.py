@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 
@@ -6,10 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Client
 from app.db.enums import UserTypeEnum, RequestStatusEnum
-from app.schemas.user import UserSchema, UserUpdate
+from app.schemas.user import UserSchema, UserUpdate, PsychologistInfoResponse
 from app.services.user_service import update_user_profile_service, update_user_photo
 from app.services.client_request_service import create_psychologist_application, get_client_request_status_service
 from app.services.psychologist_request_service import get_psychologist_requests_service, update_psychologist_request_status
+from app.services.psychologist_service import get_client_psychologists_service
 from app.dependencies import get_current_user
 from app.db.session import get_db
 from app.core.config import settings
@@ -143,3 +145,17 @@ async def accept_psychologist_request(
     Accept a psychologist request and link client with psychologist.
     """
     return await update_psychologist_request_status(request_id, RequestStatusEnum.APPROVED, current_user.client_id, db)
+
+
+@router.get("/user/psychologists")
+async def get_client_psychologists(
+current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all psychologists linked to the authenticated client.
+    """
+    psychologists = await get_client_psychologists_service(current_user.client_id, db)
+    if not psychologists:
+        return {"message": "No psychologists found", "psychologists": []}
+    return {"psychologists": psychologists}

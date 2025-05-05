@@ -99,7 +99,7 @@ class UserUpdate(BaseModel):
         return values
 
 
-class PsychologistRequestResponse(BaseModel):
+class PsychologistInfoResponse(BaseModel):
     login: str
     first_name: str
     last_name: str
