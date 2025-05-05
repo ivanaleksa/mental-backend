@@ -8,6 +8,7 @@ from app.db.models.client import Client
 from app.db.enums.user_type_enum import UserTypeEnum
 from app.schemas.user import UserSchema, UserUpdate
 from app.services.user_service import update_user_profile_service, update_user_photo
+from app.services.client_request_service import create_psychologist_application
 from app.dependencies import get_current_user
 from app.db.session import get_db
 from app.core.config import settings
@@ -64,9 +65,9 @@ async def update_profile_photo(
     if not photo:
         raise HTTPException(status_code=400, detail="No photo file provided")
 
-    if photo.size > settings.MAX_PROFILE_IMAGE_SIZE:
+    if photo.size > settings.MAX_FILE_SIZE:
         raise HTTPException(status_code=400,
-                            detail=f"File size exceeds {settings.MAX_PROFILE_IMAGE_SIZE / (1024 * 1024)}MB limit")
+                            detail=f"File size exceeds {settings.MAX_FILE_SIZE / (1024 * 1024)}MB limit")
 
     file_extension = os.path.splitext(photo.filename.lower())[1]
     if file_extension not in settings.ALLOWED_PROFILE_IMAGE_EXTENSIONS:
@@ -74,3 +75,32 @@ async def update_profile_photo(
 
     update_data = {"photo": photo, "user_type": user_type}
     return await update_user_photo(current_user.login, update_data, db)
+
+
+@router.post("/user/apply-for-psychologist")
+async def apply_for_psychologist(
+    document: UploadFile = Form(..., description="Document proving psychologist qualification"),
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if not document:
+        raise HTTPException(status_code=400, detail="No document file provided")
+    
+    if document.size > settings.MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail=f"File size exceeds {settings.MAX_FILE_SIZE / (1024 * 1024)}MB limit")
+    
+    return await create_psychologist_application(current_user.client_id, document, db)
+
+
+@router.get("/user/client-request-status")
+async def get_client_request_status(
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get the status of the client's psychologist application.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    return await get_client_request_status(current_user.client_id, db)

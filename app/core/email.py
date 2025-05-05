@@ -35,3 +35,14 @@ async def send_confirmation_email(email: str, code: str, action: str):
     )
 
     await fast_mail.send_message(message)
+
+
+async def send_client_request_notification(email: str, subject: str, body: str):
+    message = MessageSchema(
+        subject=subject,
+        recipients=[email],
+        body=body,
+        subtype="html"
+    )
+
+    await fast_mail.send_message(message)

@@ -6,8 +6,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
-    MAX_PROFILE_IMAGE_SIZE: int = 1 * 1024 * 1024  # 1MB
+
+    MAX_FILE_SIZE: int = 2 * 1024 * 1024  # 2MB
     ALLOWED_PROFILE_IMAGE_EXTENSIONS: set = {".jpg", ".jpeg", ".png"}
+    ALLOWED_REQUEST_EXTENTIONS: set = {".pdf",}
 
     # SMTP settings
     MAIL_USERNAME: str
@@ -20,6 +22,7 @@ class Settings(BaseSettings):
     CODE_EXPIRE_MINUTES: int
 
     MEDIA_DIRECTORY: str
+    DOCUMENTS_DIRECTORY: str
 
     class Config:
         env_file = ".env"
