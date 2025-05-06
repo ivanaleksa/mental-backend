@@ -278,6 +278,7 @@ async def update_user_profile_service(user_login: str, update_data: UserUpdate, 
     await db.refresh(user)
 
     user_response = UserSchema(
+        user_id=user.client_id,
         login=user.login,
         email=user.email,
         first_name=user.first_name,
@@ -328,7 +329,7 @@ async def update_user_photo(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save photo: {str(e)}")
 
-    user.client_photo = file_path
+    user.client_photo = unique_filename
     await db.commit()
     await db.refresh(user)
 

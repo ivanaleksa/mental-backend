@@ -28,6 +28,7 @@ async def get_user_me(current_user: Client = Depends(get_current_user)) -> UserS
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     user_info = UserSchema(
+        user_id=current_user.client_id,
         login=current_user.login,
         email=current_user.email,
         first_name=current_user.first_name,
@@ -36,6 +37,7 @@ async def get_user_me(current_user: Client = Depends(get_current_user)) -> UserS
         is_verified=current_user.is_verified,
         sex=current_user.sex,
         client_photo=current_user.client_photo,
+        user_type=UserTypeEnum.CLIENT
     )
 
     return user_info

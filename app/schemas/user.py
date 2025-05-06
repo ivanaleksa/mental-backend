@@ -7,15 +7,16 @@ from app.db.enums import SexEnum, UserTypeEnum
 
 
 class UserSchema(BaseModel):
-    login: str = Field(..., min_length=3, max_length=50)
+    user_id: int
+    login: str
     email: EmailStr
-    first_name: str = Field(..., min_length=1, max_length=50)
-    last_name: str = Field(..., min_length=1, max_length=50)
-    birthAt: str  # ISO format date yyyy
+    first_name: str
+    last_name: str
+    birthAt: str  # ISO format date yyyy-mm-dd
     sex: SexEnum
     client_photo: str | None
     is_verified: bool
-    user_type: UserTypeEnum = UserTypeEnum.CLIENT
+    user_type: UserTypeEnum
 
     class Config:
         use_enum_values = True
@@ -100,6 +101,7 @@ class UserUpdate(BaseModel):
 
 
 class PsychologistInfoResponse(BaseModel):
+    request_id: int
     login: str
     first_name: str
     last_name: str

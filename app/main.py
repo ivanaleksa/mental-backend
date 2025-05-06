@@ -1,6 +1,7 @@
 import os
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -28,6 +29,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.mount("/public", StaticFiles(directory="public"), name="public")
 app.include_router(api_router, prefix="/app/v1")
 app.include_router(user_router, prefix="/app/v1")
 app.include_router(admin_router, prefix="/app/v1")

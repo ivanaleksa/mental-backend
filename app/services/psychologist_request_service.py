@@ -30,6 +30,7 @@ async def get_psychologist_requests_service(
         psychologist: Psychologist = request.psychologist
         response_data.append(
             PsychologistInfoResponse(
+                request_id=request.request_id,
                 login=psychologist.login,
                 first_name=psychologist.first_name,
                 last_name=psychologist.last_name,
