@@ -17,7 +17,7 @@ class ClientRequest(Base):
     document = Column(String, nullable=False)
     status = Column(PgEnum(RequestStatusEnum, name="request_status", create_type=False), nullable=False)
     rejection_reason = Column(String, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable=False, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     client = relationship("Client", back_populates="client_requests")

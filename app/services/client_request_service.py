@@ -22,7 +22,7 @@ async def create_psychologist_application(
     """
     stmt = select(ClientRequest).where(
         ClientRequest.client_id == client_id,
-        ClientRequest.status == ClientRequest.PENDING
+        ClientRequest.status == RequestStatusEnum.PENDING
     )
     result = await db.execute(stmt)
     existing_application = result.scalar_one_or_none()

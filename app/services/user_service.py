@@ -188,6 +188,8 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
         last_name=user.last_name,
         birthAt=user.birthAt.isoformat(),
         is_verified=user.is_verified,
+        sex=user.sex,
+        user_type=update_info.user_type,
         client_photo=user.client_photo,
         jwt_token=jwt_token
     )
