@@ -101,7 +101,7 @@ class UserUpdate(BaseModel):
 
 
 class PsychologistInfoResponse(BaseModel):
-    request_id: int
+    request_id: Optional[int] = None
     login: str
     first_name: str
     last_name: str
