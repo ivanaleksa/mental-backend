@@ -11,3 +11,8 @@ pydantic-settings==2.6.1
 python-jose==3.4.0
 pydantic[email]
 SQLAlchemy==2.0.40
+
+# For ml model
+torch==2.7.0
+transformers==4.51.3
+googletrans==4.0.2
