@@ -1,8 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Note
-from app.schemas.note import NoteCreate
-from app.db.enums import EmotionsEnum
+from app.schemas.note import NoteCreate, NoteResponse
 
 
 async def create_note(
@@ -23,10 +22,12 @@ async def create_note(
     await db.commit()
     await db.refresh(note)
 
-    return {
-        "message": "Note created successfully",
-        "note_id": note.note_id,
-        "title": note.title,
-        "body": note.body,
-        "createdAt": note.createdAt
-    }
+    response = NoteResponse(
+        note_id=note.note_id,
+        title=note.title,
+        body=note.body,
+        createdAt=note.createdAt,
+        emotions=[emotion.value for emotion in note.emotions] if note.emotions else None
+    )
+
+    return response

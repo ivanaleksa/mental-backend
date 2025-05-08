@@ -11,6 +11,7 @@ class NoteResponse(BaseModel):
     note_id: int = Field(..., description="ID of the note")
     title: str = Field(..., description="Title of the note")
     body: str | None = Field(None, description="Body of the note")
+    emotions: list[str] | None = Field(None, description="List of emotions associated with the note")
     createdAt: datetime = Field(..., description="Creation date of the note")
 
     class Config:
