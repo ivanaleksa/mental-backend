@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from datetime import datetime, timezone
+
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
@@ -13,9 +15,9 @@ class Note(Base):
     note_id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     body = Column(String, nullable=True)
-    createdAt = Column(DateTime, nullable=False)
-    updatedAt = Column(DateTime, nullable=False)
-    emotions = Column(PgEnum(EmotionsEnum, name="emotions", create_type=False), nullable=True)
+    createdAt = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updatedAt = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    emotions = Column(ARRAY(PgEnum(EmotionsEnum, name="emotions", create_type=False)), nullable=True)
     client_id = Column(Integer, ForeignKey("clients.client_id"), nullable=False)
 
     client = relationship("Client", back_populates="notes")
