@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.api.v1.auth_routes import router as api_router
 from app.api.v1.user_routes import router as user_router
 from app.api.v1.admin_routes import router as admin_router
+from app.api.v1.note_routes import router as note_router
 
 
 # Ensure the directories for storing user photos exist
@@ -33,3 +34,4 @@ app.mount("/public", StaticFiles(directory="public"), name="public")
 app.include_router(api_router, prefix="/app/v1")
 app.include_router(user_router, prefix="/app/v1")
 app.include_router(admin_router, prefix="/app/v1")
+app.include_router(note_router, prefix="/app/v1")
