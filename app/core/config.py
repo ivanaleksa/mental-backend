@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     MEDIA_DIRECTORY: str
     DOCUMENTS_DIRECTORY: str
 
+    MODEL_PATH: str
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

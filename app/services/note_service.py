@@ -1,17 +1,18 @@
 from datetime import datetime
 from typing import Optional
+import asyncio
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Note
 from app.schemas.note import (
-    NoteCreate, NoteResponse, 
+    NoteCreate, NoteResponse, NoteAnalysisResponse,
     NoteUpdate, NotesResponse, NoteListResponse
 )
-
+from app.ml_service import ThreadSafeModelHandler
 
 async def create_note(
     client_id: int,
@@ -172,4 +173,36 @@ async def get_note_by_id_service(
         body=note.body,
         createdAt=note.createdAt,
         emotions=note.emotions if note.emotions else []
+    )
+
+
+async def analyze_note(
+    note_id: int,
+    client_id: int,
+    db: AsyncSession,
+    model_handler: ThreadSafeModelHandler = Depends()
+) -> NoteAnalysisResponse:
+    """
+    Analyze a note by its ID using RoBertaModel and return the top 3 emotions.
+    """
+    stmt = select(Note).where(Note.note_id == note_id)
+    result = await db.execute(stmt)
+    note = result.scalar_one_or_none()
+
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    if note.client_id != client_id:
+        raise HTTPException(status_code=403, detail="Not authorized to analyze this note")
+
+    if not note.body or not note.body.strip():
+        raise HTTPException(status_code=400, detail="Note body is empty or invalid")
+
+    try:
+        predicted_emotions = await asyncio.to_thread(model_handler.predict, note.body)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+    return NoteAnalysisResponse(
+        note_id=note.note_id,
+        emotions=predicted_emotions
     )

@@ -43,3 +43,11 @@ class NoteListResponse(BaseModel):
 class NotesResponse(BaseModel):
     notes: List[NoteListResponse]
     total: int = Field(..., description="Total number of notes")
+
+
+class NoteAnalysisResponse(BaseModel):
+    note_id: int = Field(..., description="ID of the analyzed note")
+    emotions: List[EmotionsEnum] = Field(..., description="Top 3 predicted emotions", max_items=3)
+
+    class Config:
+        from_attributes = True

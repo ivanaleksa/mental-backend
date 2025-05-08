@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.ml_service import ThreadSafeModelHandler
 from app.api.v1.auth_routes import router as api_router
 from app.api.v1.user_routes import router as user_router
 from app.api.v1.admin_routes import router as admin_router
@@ -22,10 +23,13 @@ def ensure_directories():
 
 ensure_directories()
 
+
 app = FastAPI(title="Mental Platform")
+model_handler = ThreadSafeModelHandler(settings.MODEL_PATH)
+app.dependency_overrides[ThreadSafeModelHandler] = lambda: model_handler
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173"],  # TODO: take this out
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

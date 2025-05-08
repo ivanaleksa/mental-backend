@@ -8,11 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.note_service import (
     create_note, delete_note, 
     update_note, get_client_notes_service, 
-    get_note_by_id_service
+    get_note_by_id_service, analyze_note
 )
-from app.schemas.note import NoteCreate, NoteResponse, NoteUpdate, NotesResponse
+from app.schemas.note import NoteCreate, NoteResponse, NoteUpdate, NotesResponse, NoteAnalysisResponse
 from app.dependencies import get_current_user, get_db
 from app.db.models import Client
+from app.ml_service import ThreadSafeModelHandler
 
 
 router = APIRouter(tags=["Note"])
@@ -87,3 +88,16 @@ async def get_note_by_id(
     Get a specific note by its ID for the authenticated client.
     """
     return await get_note_by_id_service(note_id, current_user.client_id, db)
+
+
+@router.get("/note/{note_id}/analyze", response_model=NoteAnalysisResponse)
+async def analyze_note_by_id(
+    note_id: int,
+    current_user: Client = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    model_handler: ThreadSafeModelHandler = Depends()
+):
+    """
+    Analyze a specific note by its ID and return the top 3 predicted emotions.
+    """
+    return await analyze_note(note_id, current_user.client_id, db, model_handler)
