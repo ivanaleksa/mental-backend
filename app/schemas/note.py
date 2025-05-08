@@ -28,3 +28,18 @@ class NoteUpdate(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class NoteListResponse(BaseModel):
+    note_id: int = Field(..., description="ID of the note")
+    title: str = Field(..., description="Title of the note")
+    createdAt: datetime = Field(..., description="Creation date of the note")
+    emotions: Optional[List[EmotionsEnum]] = Field(None, description="List of emotions (max 3)")
+
+    class Config:
+        from_attributes = True
+
+
+class NotesResponse(BaseModel):
+    notes: List[NoteListResponse]
+    total: int = Field(..., description="Total number of notes")
