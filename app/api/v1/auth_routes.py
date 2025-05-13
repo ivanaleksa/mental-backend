@@ -11,12 +11,14 @@ from app.schemas import (
     UserCreate, UserResponse, UserLogin,
     UserUpdatePassword, UserResetPass, UserResetPassConfirm
 )
+from app.schemas.admin import AdminLoginResponse, AdminLoginRequest
 from app.db.session import get_db
 from app.db.models import Client, Psychologist, ConfirmationRequest
 from app.db.enums.email_confirmation_type_enum import EmailConfirmationTypeEnum
 from app.services.user_service import register_user_service, login_user_service, update_password_service, \
     reset_password_service
 from app.services.auth_service import confirm_email_service, pass_reset_confirmation_service
+from app.services.admin_service import login_admin_service
 from app.dependencies import get_current_user
 from app.core import send_confirmation_email, settings
 
@@ -46,6 +48,17 @@ async def login_user(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     """
     try:
         return await login_user_service(login_data, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/admin/login", response_model=AdminLoginResponse)
+async def login_admin(admin_data: AdminLoginRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Login an admin and return their info with a JWT token.
+    """
+    try:
+        return await login_admin_service(admin_data, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

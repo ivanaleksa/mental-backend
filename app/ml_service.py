@@ -83,7 +83,7 @@ class RoBertaModel(AbstractModel):
     
     def _preprocessing(self, text: str) -> dict:
         if not self._validation(text):
-            translated = self.translator.translate(text, dest='en').text
+            translated = self.translator.translate(text, dest='en').text  # TODO: не работает с русскими заметками, 500 ошибка
         else:
             translated = text
         
