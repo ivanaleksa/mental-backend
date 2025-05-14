@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import asyncio
 
@@ -115,6 +115,7 @@ async def get_client_notes_service(
     stmt = select(Note).where(Note.client_id == client_id)
 
     if start_date and end_date:
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=timezone.utc)
         stmt = stmt.where(Note.createdAt.between(start_date, end_date))
     elif start_date:
         stmt = stmt.where(Note.createdAt >= start_date)
