@@ -18,7 +18,7 @@ class Note(Base):
     createdAt = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     updatedAt = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     emotions = Column(ARRAY(PgEnum(EmotionsEnum, name="emotions", create_type=False)), nullable=True)
-    client_id = Column(Integer, ForeignKey("clients.client_id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("clients.client_id", ondelete="CASCADE"), nullable=False)
 
     client = relationship("Client", back_populates="notes")
 

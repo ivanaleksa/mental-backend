@@ -24,11 +24,12 @@ class Psychologist(Base):
     clients = relationship(
         "Client",
         secondary=client_psychologist,
-        back_populates="psychologists"
+        back_populates="psychologists",
+        cascade="all, delete-orphan"
     )
 
-    confirmation_requests = relationship("ConfirmationRequest", back_populates="psychologist")
-    psychologist_requests = relationship("PsychologistRequest", back_populates="psychologist")
+    confirmation_requests = relationship("ConfirmationRequest", back_populates="psychologist", cascade="all, delete-orphan")
+    psychologist_requests = relationship("PsychologistRequest", back_populates="psychologist", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_psychologists_login", "login"),

@@ -25,13 +25,14 @@ class Client(Base):
     psychologists = relationship(
         "Psychologist",
         secondary=client_psychologist,
-        back_populates="clients"
+        back_populates="clients",
+        cascade="all, delete-orphan"
     )
 
-    notes = relationship("Note", back_populates="client")
-    confirmation_requests = relationship("ConfirmationRequest", back_populates="client")
-    psychologist_requests = relationship("PsychologistRequest", back_populates="client")
-    client_requests = relationship("ClientRequest", back_populates="client")
+    notes = relationship("Note", back_populates="client", cascade="all, delete-orphan")
+    confirmation_requests = relationship("ConfirmationRequest", back_populates="client", cascade="all, delete-orphan")
+    psychologist_requests = relationship("PsychologistRequest", back_populates="client", cascade="all, delete-orphan")
+    client_requests = relationship("ClientRequest", back_populates="client", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_clients_login", "login"),
