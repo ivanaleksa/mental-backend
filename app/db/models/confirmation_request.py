@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.orm import relationship
 
@@ -21,3 +21,8 @@ class ConfirmationRequest(Base):
 
     client = relationship("Client", back_populates="confirmation_requests")
     psychologist = relationship("Psychologist", back_populates="confirmation_requests")
+
+    __table_args__ = (
+        Index("idx_confirmation_requests_client_id", "client_id"),
+        Index("idx_confirmation_requests_psychologist_id", "psychologist_id"),
+    )

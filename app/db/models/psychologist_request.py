@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.orm import relationship
 
@@ -17,3 +17,8 @@ class PsychologistRequest(Base):
 
     psychologist = relationship("Psychologist", back_populates="psychologist_requests")
     client = relationship("Client", back_populates="psychologist_requests")
+
+    __table_args__ = (
+        Index("idx_psychologist_requests_client_id", "client_id"),
+        Index("idx_psychologist_requests_psychologist_id", "psychologist_id"),
+    )

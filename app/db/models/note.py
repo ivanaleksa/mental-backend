@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, ARRAY
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, ARRAY, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
@@ -21,3 +21,8 @@ class Note(Base):
     client_id = Column(Integer, ForeignKey("clients.client_id"), nullable=False)
 
     client = relationship("Client", back_populates="notes")
+
+    __table_args__ = (
+        Index("idx_notes_client_id", "client_id"),
+        Index("idx_notes_createdAt", "createdAt"),
+    )
