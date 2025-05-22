@@ -134,7 +134,7 @@ async def login_user_service(login_data: UserLogin, db: AsyncSession) -> UserRes
     jwt_token = create_jwt_token(data={"sub": user.login, "user_type": login_data.user_type})
 
     user_response = UserResponse(
-        user_id=user.client_id if login_data.user_type == UserTypeEnum.CLIENT else user.psychologist_id,
+        user_id=user.client_id,
         login=user.login,
         email=user.email,
         first_name=user.first_name,

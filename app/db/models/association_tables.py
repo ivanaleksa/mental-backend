@@ -7,7 +7,7 @@ client_psychologist = Table(
     Base.metadata,
     Column("relation_id", Integer, primary_key=True),
     Column("client_id", Integer, ForeignKey("clients.client_id", ondelete="CASCADE"), nullable=False),
-    Column("psychologist_id", Integer, ForeignKey("psychologists.psychologist_id", ondelete="CASCADE"), nullable=False),
+    Column("psychologist_id", Integer, ForeignKey("psychologists.client_id", ondelete="CASCADE"), nullable=False),
     Index("idx_client_psychologist_client_id", "client_id"),
     Index("idx_client_psychologist_psychologist_id", "psychologist_id")
 )

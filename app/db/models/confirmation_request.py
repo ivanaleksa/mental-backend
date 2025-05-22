@@ -12,7 +12,7 @@ class ConfirmationRequest(Base):
 
     confirmation_id = Column(Integer, primary_key=True)
     client_id = Column(Integer, ForeignKey("clients.client_id", ondelete="CASCADE"), nullable=True)
-    psychologist_id = Column(Integer, ForeignKey("psychologists.psychologist_id", ondelete="CASCADE"), nullable=True)
+    psychologist_id = Column(Integer, ForeignKey("psychologists.client_id", ondelete="CASCADE"), nullable=True)
     code = Column(String, nullable=False)
     email = Column(String, nullable=False)
     createdAt = Column(DateTime(timezone=True), nullable=False)

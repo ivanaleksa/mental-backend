@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Client
+from app.db.models import Client, Psychologist
 from app.db.enums import UserTypeEnum, RequestStatusEnum
 from app.schemas.user import UserSchema, UserUpdate
 from app.services.user_service import update_user_profile_service, update_user_photo
@@ -20,7 +20,7 @@ router = APIRouter(tags=["User"])
 
 
 @router.get("/user/me", response_model=UserSchema)
-async def get_user_me(current_user: Client = Depends(get_current_user)) -> UserSchema:
+async def get_user_me(current_user: Client | Psychologist = Depends(get_current_user)) -> UserSchema:
     """
     Get the current user's information.
     """
@@ -37,7 +37,7 @@ async def get_user_me(current_user: Client = Depends(get_current_user)) -> UserS
         is_verified=current_user.is_verified,
         sex=current_user.sex,
         client_photo=current_user.client_photo,
-        user_type=UserTypeEnum.CLIENT
+        user_type=UserTypeEnum.CLIENT if type(current_user) is Client else UserTypeEnum.PSYCHOLOGIST
     )
 
     return user_info

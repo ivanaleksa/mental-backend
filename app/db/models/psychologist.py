@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Index
+from sqlalchemy import Column, Integer, String, DateTime, Index, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
@@ -11,7 +11,7 @@ from app.db.enums.sex_enum import SexEnum
 class Psychologist(Base):
     __tablename__ = "psychologists"
 
-    psychologist_id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, primary_key=True)
     login = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
@@ -19,13 +19,13 @@ class Psychologist(Base):
     last_name = Column(String, nullable=False)
     birthAt = Column(DateTime, nullable=False)
     sex = Column(PgEnum(SexEnum, name="sex", create_type=False), nullable=False)
-    psychologist_photo = Column(String, nullable=True)
+    client_photo = Column(String, nullable=True)
+    is_verified = Column(Boolean, nullable=False, default=True)
 
     clients = relationship(
         "Client",
         secondary=client_psychologist,
-        back_populates="psychologists",
-        cascade="all, delete-orphan"
+        back_populates="psychologists"
     )
 
     confirmation_requests = relationship("ConfirmationRequest", back_populates="psychologist", cascade="all, delete-orphan")

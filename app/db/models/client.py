@@ -25,8 +25,7 @@ class Client(Base):
     psychologists = relationship(
         "Psychologist",
         secondary=client_psychologist,
-        back_populates="clients",
-        cascade="all, delete-orphan"
+        back_populates="clients"
     )
 
     notes = relationship("Note", back_populates="client", cascade="all, delete-orphan")
