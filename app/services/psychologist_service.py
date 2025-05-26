@@ -2,10 +2,11 @@ from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import and_, delete
+from sqlalchemy import and_, delete, func
 
-from app.db.models import Psychologist, client_psychologist
+from app.db.models import Client, Psychologist, Note, client_psychologist
 from app.schemas.user import PsychologistInfoResponse
+from app.schemas.psychologist import DocumentResponse, ClientBase, PaginatedResponse, NoteResponse
 
 
 async def get_client_psychologists_service(
@@ -19,7 +20,7 @@ async def get_client_psychologists_service(
         select(Psychologist)
         .join(
             client_psychologist,
-            client_psychologist.c.psychologist_id == Psychologist.psychologist_id
+            client_psychologist.c.psychologist_id == Psychologist.client_id
         )
         .where(client_psychologist.c.client_id == client_id)
     )
@@ -34,7 +35,7 @@ async def get_client_psychologists_service(
                 first_name=psychologist.first_name,
                 last_name=psychologist.last_name,
                 sex=psychologist.sex,
-                psychologist_photo=psychologist.psychologist_photo
+                psychologist_photo=psychologist.client_photo
             )
         )
 
@@ -62,3 +63,142 @@ async def remove_psychologist_from_client_service(
         raise HTTPException(status_code=404, detail="Relationship not found")
 
     return {"message": "Psychologist removed successfully"}
+
+
+async def get_psychologist_document(
+    psychologist_id: int,
+    db: AsyncSession
+) -> DocumentResponse:
+    stmt = select(Psychologist).where(Psychologist.client_id == psychologist_id)
+    result = await db.execute(stmt)
+    psychologist = result.scalar_one_or_none()
+
+    if not psychologist or not psychologist.psychologist_docs:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    return DocumentResponse(document_path=psychologist.psychologist_docs)
+
+
+async def revert_to_client(
+    psychologist_id: int,
+    db: AsyncSession
+) -> dict:
+    stmt = select(Psychologist).where(Psychologist.client_id == psychologist_id)
+    result = await db.execute(stmt)
+    psychologist = result.scalar_one_or_none()
+
+    if not psychologist:
+        raise HTTPException(status_code=404, detail="Psychologist not found")
+
+    client = Client(
+        login=psychologist.login,
+        password=psychologist.password,
+        email=psychologist.email,
+        first_name=psychologist.first_name,
+        last_name=psychologist.last_name,
+        birthAt=psychologist.birthAt,
+        sex=psychologist.sex,
+        client_photo=psychologist.client_photo,
+        is_verified=True
+    )
+    db.add(client)
+    await db.commit()
+    await db.refresh(client)
+
+    await db.delete(psychologist)
+    await db.commit()
+
+    return {"message": "Psychologist reverted to client successfully", "client_id": client.client_id}
+
+
+async def get_psychologist_clients(
+    psychologist_id: int,
+    db: AsyncSession,
+    page: int = 1,
+    size: int = 10
+) -> PaginatedResponse[ClientBase]:
+    offset = (page - 1) * size
+
+    stmt = (
+        select(Client)
+        .join(client_psychologist)
+        .where(client_psychologist.c.psychologist_id == psychologist_id)
+        .offset(offset)
+        .limit(size)
+    )
+    result = await db.execute(stmt)
+    clients = result.scalars().all()
+
+    total_stmt = (
+        select(func.count())
+        .select_from(client_psychologist)
+        .where(client_psychologist.c.psychologist_id == psychologist_id)
+    )
+    total_result = await db.execute(total_stmt)
+    total = total_result.scalar()
+
+    client_responses = [
+        ClientBase(
+            client_id=c.client_id,
+            login=c.login,
+            email=c.email,
+            first_name=c.first_name,
+            last_name=c.last_name,
+            birthAt=c.birthAt,
+            sex=c.sex,
+            client_photo=c.client_photo,
+            is_verified=c.is_verified
+        )
+        for c in clients
+    ]
+
+    return PaginatedResponse[ClientBase](items=client_responses, total=total, page=page, size=size)
+
+
+async def get_client_notes_for_psychologist(
+    psychologist_id: int,
+    client_id: int,
+    db: AsyncSession,
+    page: int = 1,
+    size: int = 10
+) -> PaginatedResponse[NoteResponse]:
+    offset = (page - 1) * size
+
+    stmt_check = (
+        select(client_psychologist)
+        .where(client_psychologist.c.psychologist_id == psychologist_id)
+        .where(client_psychologist.c.client_id == client_id)
+    )
+    result_check = await db.execute(stmt_check)
+    if not result_check.first():
+        raise HTTPException(status_code=403, detail="Client is not assigned to this psychologist")
+
+    total_stmt = (
+        select(func.count())
+        .select_from(Note)
+        .where(Note.client_id == client_id)
+    )
+    total_result = await db.execute(total_stmt)
+    total = total_result.scalar()
+
+    stmt = (
+        select(Note)
+        .where(Note.client_id == client_id)
+        .offset(offset)
+        .limit(size)
+    )
+    result = await db.execute(stmt)
+    notes = result.scalars().all()
+
+    note_responses = [
+        NoteResponse(
+            note_id=n.note_id,
+            title=n.title,
+            body=n.body,
+            createdAt=n.createdAt,
+            emotions=n.emotions if n.emotions else []
+        )
+        for n in notes
+    ]
+
+    return PaginatedResponse[NoteResponse](items=note_responses, total=total, page=page, size=size)
