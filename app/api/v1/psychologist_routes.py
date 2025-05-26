@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Psychologist
 from app.services.psychologist_service import (
     get_psychologist_document, revert_to_client,
-    get_psychologist_clients, get_client_notes_for_psychologist
+    get_psychologist_clients, get_client_notes_for_psychologist,
+    search_client_by_login, create_psychologist_request
 )
 from app.schemas.psychologist import (
-    DocumentResponse, PaginatedResponse, ClientBase, NoteResponse
+    DocumentResponse, PaginatedResponse, 
+    ClientBase, NoteResponse, PsychologistRequestResponse
 )
 from app.dependencies import get_current_user, get_db
 
@@ -63,3 +65,26 @@ async def get_client_notes(
     if type(psychologist) is not Psychologist:
         raise HTTPException(status_code=403, detail="Access forbidden: not a psychologist")
     return await get_client_notes_for_psychologist(psychologist.client_id, client_id, db, page, size)
+
+
+@router.get("/psychologist/search-client", response_model=ClientBase)
+async def search_client(
+    login: str = Query(..., description="Exact login to search for"),
+    db: AsyncSession = Depends(get_db),
+    psychologist: Psychologist = Depends(get_current_user)
+):
+    """Search for a client by exact login (case-sensitive)."""
+    if type(psychologist) is not Psychologist:
+        raise HTTPException(status_code=403, detail="Access forbidden: not a psychologist")
+    return await search_client_by_login(login, db)
+
+@router.post("/psychologist/request-client/{client_id}", response_model=PsychologistRequestResponse)
+async def create_request(
+    client_id: int,
+    db: AsyncSession = Depends(get_db),
+    psychologist: Psychologist = Depends(get_current_user)
+):
+    """Create a request to connect with a client."""
+    if type(psychologist) is not Psychologist:
+        raise HTTPException(status_code=403, detail="Access forbidden: not a psychologist")
+    return await create_psychologist_request(psychologist.client_id, client_id, db)

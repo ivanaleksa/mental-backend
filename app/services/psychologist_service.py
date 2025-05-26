@@ -4,9 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, delete, func
 
-from app.db.models import Client, Psychologist, Note, client_psychologist
+from app.db.enums import RequestStatusEnum
+from app.db.models import Client, Psychologist, Note, PsychologistRequest, client_psychologist
 from app.schemas.user import PsychologistInfoResponse
-from app.schemas.psychologist import DocumentResponse, ClientBase, PaginatedResponse, NoteResponse
+from app.schemas.psychologist import ( 
+    DocumentResponse, ClientBase, PaginatedResponse,
+    NoteResponse, PsychologistRequestResponse
+)
 
 
 async def get_client_psychologists_service(
@@ -31,6 +35,7 @@ async def get_client_psychologists_service(
     for psychologist in psychologists:
         response_data.append(
             PsychologistInfoResponse(
+                psychologist_id=psychologist.client_id,
                 login=psychologist.login,
                 first_name=psychologist.first_name,
                 last_name=psychologist.last_name,
@@ -202,3 +207,80 @@ async def get_client_notes_for_psychologist(
     ]
 
     return PaginatedResponse[NoteResponse](items=note_responses, total=total, page=page, size=size)
+
+
+async def search_client_by_login(
+    login: str,
+    db: AsyncSession
+) -> ClientBase:
+    stmt = select(Client).where(Client.login == login)
+    result = await db.execute(stmt)
+    client = result.scalar_one_or_none()
+
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    return ClientBase(
+        client_id=client.client_id,
+        login=client.login,
+        email=client.email,
+        first_name=client.first_name,
+        last_name=client.last_name,
+        birthAt=client.birthAt,
+        sex=client.sex,
+        client_photo=client.client_photo,
+        is_verified=client.is_verified
+    )
+
+async def create_psychologist_request(
+    psychologist_id: int,
+    client_id: int,
+    db: AsyncSession
+) -> PsychologistRequestResponse:
+    stmt = select(Client).where(Client.client_id == client_id)
+    result = await db.execute(stmt)
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    stmt = select(Psychologist).where(Psychologist.client_id == psychologist_id)
+    result = await db.execute(stmt)
+    psychologist = result.scalar_one_or_none()
+    if not psychologist:
+        raise HTTPException(status_code=404, detail="Psychologist not found")
+
+    stmt = (
+        select(PsychologistRequest)
+        .where(PsychologistRequest.psychologist_id == psychologist_id)
+        .where(PsychologistRequest.client_id == client_id)
+        .where(PsychologistRequest.status == RequestStatusEnum.PENDING)
+    )
+    result = await db.execute(stmt)
+    existing_request = result.scalar_one_or_none()
+    if existing_request:
+        raise HTTPException(status_code=400, detail="Request already exists")
+
+    stmt = (
+        select(client_psychologist)
+        .where(client_psychologist.c.psychologist_id == psychologist_id)
+        .where(client_psychologist.c.client_id == client_id)
+    )
+    result = await db.execute(stmt)
+    if result.first():
+        raise HTTPException(status_code=400, detail="Client is already assigned to this psychologist")
+
+    request = PsychologistRequest(
+        psychologist_id=psychologist_id,
+        client_id=client_id,
+        status=RequestStatusEnum.PENDING
+    )
+    db.add(request)
+    await db.commit()
+    await db.refresh(request)
+
+    return PsychologistRequestResponse(
+        request_id=request.request_id,
+        psychologist_id=request.psychologist_id,
+        client_id=request.client_id,
+        status=request.status
+    )

@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import insert
+from sqlalchemy.orm import joinedload
 
 from app.db.models import PsychologistRequest, Psychologist, client_psychologist
 from app.db.enums import RequestStatusEnum
@@ -20,7 +21,7 @@ async def get_psychologist_requests_service(
         select(PsychologistRequest)
         .where(PsychologistRequest.client_id == client_id,
                PsychologistRequest.status == RequestStatusEnum.PENDING)
-        .join(PsychologistRequest.psychologist)
+        .options(joinedload(PsychologistRequest.psychologist))
     )
     result = await db.execute(stmt)
     requests = result.scalars().all()
@@ -35,7 +36,7 @@ async def get_psychologist_requests_service(
                 first_name=psychologist.first_name,
                 last_name=psychologist.last_name,
                 sex=psychologist.sex,
-                psychologist_photo=psychologist.psychologist_photo,
+                psychologist_photo=psychologist.client_photo,
             )
         )
 

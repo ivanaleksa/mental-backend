@@ -15,7 +15,7 @@ class PsychologistRequest(Base):
     client_id = Column(Integer, ForeignKey("clients.client_id", ondelete="CASCADE"), nullable=False)
     status = Column(PgEnum(RequestStatusEnum, name="request_status", create_type=False), nullable=False)
 
-    psychologist = relationship("Psychologist", back_populates="psychologist_requests")
+    psychologist = relationship("Psychologist", back_populates="psychologist_requests", lazy="joined")
     client = relationship("Client", back_populates="psychologist_requests")
 
     __table_args__ = (
