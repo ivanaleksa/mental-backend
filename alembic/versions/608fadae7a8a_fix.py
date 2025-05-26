@@ -26,10 +26,10 @@ def upgrade() -> None:
     op.create_foreign_key(None, 'confirmation_requests', 'psychologists', ['psychologist_id'], ['client_id'], ondelete='CASCADE')
     op.drop_constraint('psychologist_requests_psychologist_id_fkey', 'psychologist_requests', type_='foreignkey')
     op.create_foreign_key(None, 'psychologist_requests', 'psychologists', ['psychologist_id'], ['client_id'], ondelete='CASCADE')
-    op.add_column('psychologists', sa.Column('client_id', sa.Integer(), nullable=False))
-    op.add_column('psychologists', sa.Column('client_photo', sa.String(), nullable=True))
-    op.drop_column('psychologists', 'psychologist_photo')
-    op.drop_column('psychologists', 'psychologist_id')
+    # op.add_column('psychologists', sa.Column('client_id', sa.Integer(), nullable=False))
+    # op.add_column('psychologists', sa.Column('client_photo', sa.String(), nullable=True))
+    # op.drop_column('psychologists', 'psychologist_photo')
+    # op.drop_column('psychologists', 'psychologist_id')
     # ### end Alembic commands ###
 
 

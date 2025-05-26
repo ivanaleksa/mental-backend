@@ -21,6 +21,7 @@ class Psychologist(Base):
     sex = Column(PgEnum(SexEnum, name="sex", create_type=False), nullable=False)
     client_photo = Column(String, nullable=True)
     is_verified = Column(Boolean, nullable=False, default=True)
+    psychologist_docs = Column(String, nullable=True)
 
     clients = relationship(
         "Client",
