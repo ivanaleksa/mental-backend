@@ -61,14 +61,15 @@ async def get_all_psychologists(
 
     psychologist_responses = [
         PsychologistResponse(
-            psychologist_id=p.psychologist_id,
+            psychologist_id=p.client_id,
             login=p.login,
             email=p.email,
             first_name=p.first_name,
             last_name=p.last_name,
             birthAt=p.birthAt,
             sex=p.sex,
-            psychologist_photo=p.psychologist_photo
+            psychologist_photo=p.client_photo,
+            psychologist_docs=p.psychologist_docs
         )
         for p in psychologists
     ]

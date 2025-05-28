@@ -22,6 +22,7 @@ class ClientResponse(UserBase):
 class PsychologistResponse(UserBase):
     psychologist_id: int
     psychologist_photo: Optional[str] = None
+    psychologist_docs: Optional[str] = None
 
 
 class AdminResponse(BaseModel):
