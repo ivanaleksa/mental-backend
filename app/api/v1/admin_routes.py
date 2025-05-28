@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.models import Admin
 from app.schemas.client_request import ClientRequestUpdate
 from app.schemas.admin import (
     PaginatedResponse, ClientResponse, 
@@ -17,6 +18,24 @@ from app.services.admin_service import (
 from app.dependencies import get_db, get_current_admin
 
 router = APIRouter(tags=["Admin"])
+
+
+@router.get("/admin/me", response_model=AdminResponse)
+async def get_admin_me(
+    db: AsyncSession = Depends(get_db), 
+    admin: Admin = Depends(get_current_admin)
+):
+    """
+    Get admin info
+    """
+    if not admin:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    response = AdminResponse(
+        admin_id=admin.admin_id,
+        login=admin.login
+    )
+    return response
 
 
 @router.patch("/admin/client-request/{application_id}")
