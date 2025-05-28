@@ -1,3 +1,5 @@
+import os
+
 from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,10 +80,10 @@ async def get_psychologist_document(
     result = await db.execute(stmt)
     psychologist = result.scalar_one_or_none()
 
-    if not psychologist or not psychologist.psychologist_docs:
+    if not psychologist:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    return DocumentResponse(document_path=psychologist.psychologist_docs)
+    return DocumentResponse(document_path=psychologist.psychologist_docs if psychologist.psychologist_docs else "")
 
 
 async def revert_to_client(
@@ -94,6 +96,9 @@ async def revert_to_client(
 
     if not psychologist:
         raise HTTPException(status_code=404, detail="Psychologist not found")
+
+    if psychologist.psychologist_docs and os.path.exists(psychologist.psychologist_docs):
+        os.remove(psychologist.psychologist_docs)
 
     client = Client(
         login=psychologist.login,
@@ -284,3 +289,43 @@ async def create_psychologist_request(
         client_id=request.client_id,
         status=request.status
     )
+
+
+async def remove_client_from_psychologist(
+    psychologist_id: int,
+    client_id: int,
+    db: AsyncSession
+) -> dict:
+    """
+    Remove a client from the psychologist's client list by deleting the many-to-many relationship.
+    """
+    stmt_psych = select(Psychologist).where(Psychologist.client_id == psychologist_id)
+    result_psych = await db.execute(stmt_psych)
+    psychologist = result_psych.scalar_one_or_none()
+    if not psychologist:
+        raise HTTPException(status_code=404, detail="Psychologist not found")
+
+    stmt_client = select(Client).where(Client.client_id == client_id)
+    result_client = await db.execute(stmt_client)
+    client = result_client.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    stmt_relation = (
+        select(client_psychologist)
+        .where(client_psychologist.c.psychologist_id == psychologist_id)
+        .where(client_psychologist.c.client_id == client_id)
+    )
+    result_relation = await db.execute(stmt_relation)
+    relation = result_relation.first()
+    if not relation:
+        raise HTTPException(status_code=400, detail="No relationship exists between psychologist and client")
+
+    await db.execute(
+        delete(client_psychologist)
+        .where(client_psychologist.c.psychologist_id == psychologist_id)
+        .where(client_psychologist.c.client_id == client_id)
+    )
+    await db.commit()
+
+    return {"message": "Client removed from psychologist's client list successfully", "client_id": client_id}

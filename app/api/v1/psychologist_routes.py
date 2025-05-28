@@ -6,7 +6,8 @@ from app.db.models import Psychologist
 from app.services.psychologist_service import (
     get_psychologist_document, revert_to_client,
     get_psychologist_clients, get_client_notes_for_psychologist,
-    search_client_by_login, create_psychologist_request
+    search_client_by_login, create_psychologist_request, 
+    remove_client_from_psychologist
 )
 from app.schemas.psychologist import (
     DocumentResponse, PaginatedResponse, 
@@ -88,3 +89,15 @@ async def create_request(
     if type(psychologist) is not Psychologist:
         raise HTTPException(status_code=403, detail="Access forbidden: not a psychologist")
     return await create_psychologist_request(psychologist.client_id, client_id, db)
+
+
+@router.delete("/psychologist/client/{client_id}", response_model=dict)
+async def remove_client(
+    client_id: int,
+    db: AsyncSession = Depends(get_db),
+    psychologist: Psychologist = Depends(get_current_user)
+):
+    "Remove a client from the psychologist's client list"
+    if type(psychologist) is not Psychologist:
+        raise HTTPException(status_code=403, detail="Access forbidden: not a psychologist")
+    return await remove_client_from_psychologist(psychologist.client_id, client_id, db)

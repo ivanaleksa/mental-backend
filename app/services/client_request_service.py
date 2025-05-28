@@ -122,7 +122,7 @@ async def update_client_request(request_id: int, update_data: ClientRequestUpdat
             last_name=client.last_name,
             birthAt=client.birthAt,
             sex=client.sex,
-            psychologist_photo=client.client_photo,
+            client_photo=client.client_photo,
             is_verified=True
         )
         db.add(psychologist)

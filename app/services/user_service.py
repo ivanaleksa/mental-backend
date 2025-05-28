@@ -167,7 +167,7 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
     else:
-        stmt = select(Psychologist).where(Psychologist.psychologist_id == update_info.user_id)
+        stmt = select(Psychologist).where(Psychologist.client_id == update_info.user_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
 
@@ -181,7 +181,7 @@ async def update_password_service(update_info: UserUpdatePassword, db: AsyncSess
     jwt_token = create_jwt_token(data={"sub": user.login, "user_type": update_info.user_type})
 
     user_response = UserResponse(
-        user_id=user.client_id if update_info.user_type == UserTypeEnum.CLIENT else user.psychologist_id,
+        user_id=user.client_id,
         login=user.login,
         email=user.email,
         first_name=user.first_name,
@@ -226,7 +226,7 @@ async def reset_password_service(reset_data: UserResetPass, db: AsyncSession) ->
     confirmation_code = secrets.token_hex(8)
     confirmation_code_request = ConfirmationRequest(
         client_id=user.client_id if reset_data.user_type == UserTypeEnum.CLIENT else None,
-        psychologist_id=user.psychologist_id if reset_data.user_type == UserTypeEnum.PSYCHOLOGIST else None,
+        psychologist_id=user.client_id if reset_data.user_type == UserTypeEnum.PSYCHOLOGIST else None,
         code=confirmation_code,
         email=user.email,
         createdAt=datetime.now(timezone.utc),
