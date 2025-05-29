@@ -103,11 +103,11 @@ async def update_client_request(request_id: int, update_data: ClientRequestUpdat
             raise HTTPException(status_code=400, detail="Rejection reason is required")
         application.rejection_reason = update_data.rejection_reason
 
+    stmt = select(Client).where(Client.client_id == application.client_id)
+    result = await db.execute(stmt)
+    client = result.scalar_one_or_none()
+    client_email = client.email
     if update_data.status == RequestStatusEnum.APPROVED:
-        stmt = select(Client).where(Client.client_id == application.client_id)
-        result = await db.execute(stmt)
-        client = result.scalar_one_or_none()
-
         if not client:
             raise HTTPException(status_code=404, detail="Client not found")
 
@@ -132,17 +132,16 @@ async def update_client_request(request_id: int, update_data: ClientRequestUpdat
         await db.delete(client)
 
     await db.commit()
-    await db.refresh(application)
 
     if update_data.status == RequestStatusEnum.APPROVED:
         await send_client_request_notification(
-            email=client.email,
+            email=client_email,
             subject="Your Psychologist Application Has Been Approved",
             body="Congratulations! Your application to become a psychologist has been approved. You can now access your new dashboard."
         )
     elif update_data.status == RequestStatusEnum.REJECTED:
         await send_client_request_notification(
-            email=client.email,
+            email=client_email,
             subject="Your Psychologist Application Has Been Rejected",
             body=f"We're sorry, but your application to become a psychologist has been rejected. Reason: {update_data.rejection_reason}"
         )

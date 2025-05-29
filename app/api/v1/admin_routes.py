@@ -122,4 +122,6 @@ async def create_admin_endpoint(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new admin."""
+    if admin_user.admin_id != 1:  # only base admin can create new admins
+        raise HTTPException(403, "The access is forbidden")
     return await create_admin(admin.login, admin.password, db)
