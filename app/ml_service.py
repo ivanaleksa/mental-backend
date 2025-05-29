@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 import torch
 from transformers import RobertaTokenizer, RobertaForSequenceClassification
 from googletrans import Translator
+from threading import Lock
 from app.db.enums import EmotionsEnum
+from typing import Dict, List
 
 
 class AbstractModel(ABC):
@@ -24,7 +26,7 @@ class AbstractModel(ABC):
         pass
 
 
-class RoBertaModel(AbstractModel):
+class RoBertaModel:
     emotions = {
         0: "afraid",
         1: "angry",
@@ -74,23 +76,23 @@ class RoBertaModel(AbstractModel):
         self.model.eval()
         self.tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
         self.translator = Translator()
+        self.lock = Lock()
 
     def _validation(self, text: str) -> bool:
-        if re.match(r'^[a-zA-Z0-9\s.,!?\'\"]+$', text):
-            return True
-        else:
-            return False
-    
-    def _preprocessing(self, text: str) -> dict:
-        if not self._validation(text):
-            translated = self.translator.translate(text, dest='en').text  # TODO: не работает с русскими заметками, 500 ошибка
-        else:
-            translated = text
+        return bool(re.match(r'^[a-zA-Z0-9\s.,!?\'\"]+$', text))
+
+    def _preprocessing(self, text: str) -> Dict:
+        with self.lock:
+            if not self._validation(text):
+                translation = self.translator.translate(text, dest='en')
+                translated = translation.text
+            else:
+                translated = text
         
         inputs = self.tokenizer(translated, return_tensors="pt", padding=True, truncation=True, max_length=512)
         return inputs
 
-    def predict(self, text: str) -> list[str]:
+    def predict(self, text: str) -> List[str]:
         inputs = self._preprocessing(text)
         with torch.no_grad():
             outputs = self.model(**inputs)
@@ -99,7 +101,7 @@ class RoBertaModel(AbstractModel):
         emotion_probabilities = {self.emotions[i]: prob * 100 for i, prob in enumerate(probabilities[0])}
         top_3_emotions = sorted(emotion_probabilities.items(), key=lambda item: item[1], reverse=True)[:3]
         
-        result = [self.emotion_to_enum_mapping[emotion].value for emotion, _ in top_3_emotions]
+        result = [self.emotion_to_enum_mapping[emotion] for emotion, _ in top_3_emotions]
         return result
 
 
