@@ -9,7 +9,7 @@ from sqlalchemy.future import select
 from app.db.models import ClientRequest, Client, Psychologist
 from app.schemas.client_request import ClientRequestUpdate
 from app.db.enums import RequestStatusEnum
-from app.core import settings, send_client_request_notification
+from app.core import settings
 
 
 async def create_psychologist_application(
@@ -45,7 +45,7 @@ async def create_psychologist_application(
 
     application = ClientRequest(
         client_id=client_id,
-        document=file_path,
+        document=unique_filename,
         status=RequestStatusEnum.PENDING
     )
     db.add(application)
@@ -103,11 +103,10 @@ async def update_client_request(request_id: int, update_data: ClientRequestUpdat
             raise HTTPException(status_code=400, detail="Rejection reason is required")
         application.rejection_reason = update_data.rejection_reason
 
-    stmt = select(Client).where(Client.client_id == application.client_id)
-    result = await db.execute(stmt)
-    client = result.scalar_one_or_none()
-    client_email = client.email
     if update_data.status == RequestStatusEnum.APPROVED:
+        stmt = select(Client).where(Client.client_id == application.client_id)
+        result = await db.execute(stmt)
+        client = result.scalar_one_or_none()
         if not client:
             raise HTTPException(status_code=404, detail="Client not found")
 
@@ -123,7 +122,8 @@ async def update_client_request(request_id: int, update_data: ClientRequestUpdat
             birthAt=client.birthAt,
             sex=client.sex,
             client_photo=client.client_photo,
-            is_verified=True
+            is_verified=True,
+            psychologist_docs=application.document
         )
         db.add(psychologist)
         await db.commit()
@@ -132,19 +132,6 @@ async def update_client_request(request_id: int, update_data: ClientRequestUpdat
         await db.delete(client)
 
     await db.commit()
-
-    if update_data.status == RequestStatusEnum.APPROVED:
-        await send_client_request_notification(
-            email=client_email,
-            subject="Your Psychologist Application Has Been Approved",
-            body="Congratulations! Your application to become a psychologist has been approved. You can now access your new dashboard."
-        )
-    elif update_data.status == RequestStatusEnum.REJECTED:
-        await send_client_request_notification(
-            email=client_email,
-            subject="Your Psychologist Application Has Been Rejected",
-            body=f"We're sorry, but your application to become a psychologist has been rejected. Reason: {update_data.rejection_reason}"
-        )
 
     return {
         "message": "Application updated successfully",

@@ -13,6 +13,7 @@ from app.schemas.psychologist import (
     DocumentResponse, ClientBase, PaginatedResponse,
     NoteResponse, PsychologistRequestResponse
 )
+from app.core.config import settings
 
 
 async def get_client_psychologists_service(
@@ -97,8 +98,8 @@ async def revert_to_client(
     if not psychologist:
         raise HTTPException(status_code=404, detail="Psychologist not found")
 
-    if psychologist.psychologist_docs and os.path.exists(psychologist.psychologist_docs):
-        os.remove(psychologist.psychologist_docs)
+    if psychologist.psychologist_docs and os.path.exists(os.path.join(settings.DOCUMENTS_DIRECTORY, psychologist.psychologist_docs)):
+        os.remove(os.path.join(settings.DOCUMENTS_DIRECTORY, psychologist.psychologist_docs))
 
     client = Client(
         login=psychologist.login,
